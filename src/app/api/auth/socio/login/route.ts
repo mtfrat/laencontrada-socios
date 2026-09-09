@@ -80,10 +80,32 @@ export async function POST(request: Request) {
         puntosHistoricos: socio.puntosHistoricos,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en socio login:", error);
+
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Falta configurar DATABASE_URL en las Variables de Entorno de Vercel. Luego debes hacer Redeploy.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const rawMessage = error?.message || "";
+    if (rawMessage.includes("PrismaClient") || rawMessage.includes("database") || rawMessage.includes("connect")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Error de conexión con la base de datos Supabase: " + rawMessage,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: "Ocurrió un error al procesar el ingreso. Intenta nuevamente." },
+      { success: false, error: error?.message || "Ocurrió un error al procesar el ingreso. Intenta nuevamente." },
       { status: 500 }
     );
   }
