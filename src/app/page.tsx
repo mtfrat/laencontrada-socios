@@ -1,97 +1,121 @@
 import Link from "next/link";
-import { Utensils, Award, Users, ShieldCheck, Sparkles, BookOpen } from "lucide-react";
+import Image from "next/image";
+import { Award, Users, ShieldCheck, Sparkles, ArrowRight, Wine } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-4 sm:p-8 max-w-5xl mx-auto">
-      {/* Header / Logo */}
-      <header className="w-full flex flex-col items-center text-center pt-8 pb-6 border-b border-amber-200/60">
-        <div className="w-16 h-16 rounded-full bg-amber-800 text-amber-50 flex items-center justify-center shadow-lg mb-3">
-          <Utensils className="w-8 h-8" />
+    <main className="min-h-screen bg-[#010101] text-stone-100 flex flex-col justify-between p-4 sm:p-8 max-w-5xl mx-auto">
+      {/* Header with Official Logo */}
+      <header className="w-full flex flex-col items-center text-center pt-8 pb-8 border-b border-[#5c131d]/40">
+        <div className="relative mb-3 flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#5c131d]/30 rounded-full blur-2xl scale-110" />
+          <Image
+            src="/logo.png"
+            alt="La Encontrada Wine Bistro"
+            width={130}
+            height={130}
+            priority
+            className="relative z-10 drop-shadow-[0_4px_24px_rgba(92,19,29,0.5)]"
+          />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-amber-950 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight">
           La Encontrada
         </h1>
-        <p className="text-amber-800/80 font-medium text-sm sm:text-base mt-1">
-          Club de Socios & Experiencias Gastronómicas
+        <p className="text-xs sm:text-sm font-sans tracking-widest uppercase text-[#ce7281] font-semibold mt-1">
+          WINE BISTRO • CLUB DE SOCIOS
+        </p>
+        <p className="text-stone-400 text-xs sm:text-sm max-w-md mx-auto mt-2 leading-relaxed">
+          Programa exclusivo de membresía, recompensas en mesa y seguimiento de experiencias gastronómicas.
         </p>
       </header>
 
       {/* Main Portal Access Cards */}
-      <section className="w-full grid grid-cols-1 md:grid-cols-3 gap-5 my-8">
-        {/* Socio Mobile Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-amber-100 hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center mb-4">
+      <section className="w-full grid grid-cols-1 md:grid-cols-3 gap-5 my-10">
+        {/* Portal del Socio */}
+        <div className="bg-[#0d0708] rounded-3xl p-6 border border-[#5c131d]/40 hover:border-[#5c131d] transition-all flex flex-col justify-between group shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#5c131d]/10 rounded-full blur-2xl group-hover:bg-[#5c131d]/20 transition" />
+          <div className="relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-[#5c131d]/20 text-[#e18693] border border-[#5c131d]/40 flex items-center justify-center mb-4">
               <Award className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold text-stone-800">Portal de Socios</h2>
-            <p className="text-stone-600 text-sm mt-2 leading-relaxed">
-              Consulta tus puntos acumulados, descubrí premios para canjear y revisá tu posición en el ranking de clientes frecuentes.
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-[#ce7281]">Membresía</span>
+            </div>
+            <h2 className="text-xl font-serif font-bold text-white">Portal de Socios</h2>
+            <p className="text-stone-400 text-xs sm:text-sm mt-2 leading-relaxed">
+              Ingresá con tu DNI para ver tus puntos disponibles, catálogo de vinos y platos para canjear, y tu posición en el ranking.
             </p>
           </div>
-          <div className="mt-6">
+          <div className="mt-6 relative z-10">
             <Link
               href="/socio/login"
-              className="w-full block text-center py-3 px-4 bg-amber-800 hover:bg-amber-900 text-white font-medium rounded-xl shadow transition"
+              className="w-full py-3.5 px-4 bg-[#5c131d] hover:bg-[#7a1a27] text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
-              Ingresar con mi DNI
+              <span>Ingresar con mi DNI</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
 
         {/* Terminal Mozos POS */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-amber-100 hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-800 flex items-center justify-center mb-4">
-              <Users className="w-6 h-6" />
+        <div className="bg-[#0d0708] rounded-3xl p-6 border border-stone-800 hover:border-[#5c131d]/60 transition-all flex flex-col justify-between group shadow-xl relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-stone-900 text-stone-200 border border-stone-800 flex items-center justify-center mb-4 group-hover:border-[#5c131d]/50 transition">
+              <Users className="w-6 h-6 text-[#ce7281]" />
             </div>
-            <h2 className="text-xl font-bold text-stone-800">Terminal de Mozos</h2>
-            <p className="text-stone-600 text-sm mt-2 leading-relaxed">
-              Carga ágil de consumo en mesa, división automática entre comensales y validador de cupones QR de canje.
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-stone-500">Salón & Tablet</span>
+            </div>
+            <h2 className="text-xl font-serif font-bold text-white">Terminal de Mozos</h2>
+            <p className="text-stone-400 text-xs sm:text-sm mt-2 leading-relaxed">
+              Carga ágil de tickets y comensales por mesa, alta rápida de nuevos socios en 5 segundos y validación de cupones QR.
             </p>
           </div>
-          <div className="mt-6">
+          <div className="mt-6 relative z-10">
             <Link
               href="/pos"
-              className="w-full block text-center py-3 px-4 bg-orange-700 hover:bg-orange-800 text-white font-medium rounded-xl shadow transition"
+              className="w-full py-3.5 px-4 bg-stone-900 hover:bg-stone-800 text-stone-200 hover:text-white border border-stone-700 hover:border-[#5c131d]/60 font-bold rounded-2xl shadow transition flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
-              Acceso a Salón / Caja
+              <span>Terminal de Salón</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
 
         {/* Back Office Admin */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-amber-100 hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-stone-100 text-stone-800 flex items-center justify-center mb-4">
-              <ShieldCheck className="w-6 h-6" />
+        <div className="bg-[#0d0708] rounded-3xl p-6 border border-stone-800 hover:border-[#5c131d]/60 transition-all flex flex-col justify-between group shadow-xl relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-stone-900 text-stone-200 border border-stone-800 flex items-center justify-center mb-4 group-hover:border-[#5c131d]/50 transition">
+              <ShieldCheck className="w-6 h-6 text-amber-400" />
             </div>
-            <h2 className="text-xl font-bold text-stone-800">Administración</h2>
-            <p className="text-stone-600 text-sm mt-2 leading-relaxed">
-              Panel de control gerencial, catálogo de premios, reglas de puntos, enriquecimiento gastronómico e importación de bases de datos.
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-stone-500">Gerencia</span>
+            </div>
+            <h2 className="text-xl font-serif font-bold text-white">Administración</h2>
+            <p className="text-stone-400 text-xs sm:text-sm mt-2 leading-relaxed">
+              Tablero de control, padrón de 286 socios, exportación a Excel, configuración del ratio de puntos y gestión de catálogo.
             </p>
           </div>
-          <div className="mt-6">
+          <div className="mt-6 relative z-10">
             <Link
               href="/admin"
-              className="w-full block text-center py-3 px-4 bg-stone-800 hover:bg-stone-900 text-white font-medium rounded-xl shadow transition"
+              className="w-full py-3.5 px-4 bg-stone-900 hover:bg-stone-800 text-stone-200 hover:text-white border border-stone-700 hover:border-[#5c131d]/60 font-bold rounded-2xl shadow transition flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
-              Panel Gerencial
+              <span>Panel Gerencial</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Feature Highlights & Docs banner */}
-      <footer className="w-full mt-auto pt-6 pb-4 border-t border-amber-200/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+      {/* Footer */}
+      <footer className="w-full mt-auto pt-6 pb-4 border-t border-[#5c131d]/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-700" />
-          <span>Restaurante La Encontrada • Sistema de Fidelización v1.0</span>
+          <Wine className="w-4 h-4 text-[#ce7281]" />
+          <span>La Encontrada Wine Bistro • Sistema de Membresía & Fidelización</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-stone-400">|</span>
-          <span className="font-mono text-amber-900">Sprint 1.1: Base & Setup</span>
+          <span className="font-mono text-stone-400">Bahía Blanca, Argentina</span>
         </div>
       </footer>
     </main>

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getStaffSession } from "@/lib/auth";
 import StaffLogoutButton from "@/components/staff/StaffLogoutButton";
 import VisitasManager from "@/components/admin/VisitasManager";
@@ -17,26 +18,35 @@ export default async function AdminVisitasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100 pb-16">
+    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Header */}
-      <header className="bg-stone-900 border-b border-stone-800 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href={session.role === "ADMIN" ? "/admin" : "/pos"}
-              className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 transition"
+              className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 transition border border-stone-800"
               title="Volver"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white">Historial Gastronómico</span>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  Salón & Caja
-                </span>
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/logo.png"
+                alt="La Encontrada"
+                width={30}
+                height={30}
+                className="drop-shadow-[0_1px_6px_rgba(92,19,29,0.5)]"
+              />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">Historial Gastronómico</span>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[#5c131d]/30 text-[#e18693] border border-[#5c131d]/50 font-semibold">
+                    Salón & Caja
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-400">Usuario: {session.nombre}</p>
               </div>
-              <p className="text-xs text-stone-400">Usuario: {session.nombre}</p>
             </div>
           </div>
 
@@ -44,7 +54,7 @@ export default async function AdminVisitasPage() {
             {session.role === "ADMIN" && (
               <Link
                 href="/admin"
-                className="text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 px-3 py-1.5 rounded-xl border border-stone-700 transition flex items-center gap-1.5"
+                className="text-xs bg-stone-900 hover:bg-stone-800 text-[#ce7281] px-3 py-1.5 rounded-xl border border-[#5c131d]/40 transition flex items-center gap-1.5"
               >
                 <Shield className="w-3.5 h-3.5" />
                 Panel Admin
@@ -52,10 +62,10 @@ export default async function AdminVisitasPage() {
             )}
             <Link
               href="/pos"
-              className="text-xs bg-orange-950/60 hover:bg-orange-900/60 text-orange-400 px-3 py-1.5 rounded-xl border border-orange-800/50 transition flex items-center gap-1.5"
+              className="text-xs bg-[#5c131d]/20 hover:bg-[#5c131d]/40 text-[#f5ede6] px-3 py-1.5 rounded-xl border border-[#5c131d]/40 transition flex items-center gap-1.5"
             >
-              <Users className="w-3.5 h-3.5" />
-              Terminal Mozos
+              <Users className="w-3.5 h-3.5 text-[#ce7281]" />
+              Terminal Salón
             </Link>
             <StaffLogoutButton />
           </div>
@@ -65,11 +75,11 @@ export default async function AdminVisitasPage() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 pt-6 space-y-6">
         <div>
-          <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold uppercase tracking-wider mb-1">
-            <Utensils className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-[#ce7281] text-xs font-semibold uppercase tracking-wider mb-1">
+            <Utensils className="w-4 h-4 text-[#d4aa58]" />
             <span>Tiempo 2 • Enriquecimiento Posterior</span>
           </div>
-          <h1 className="text-2xl font-serif font-bold text-white">
+          <h1 className="text-2xl font-serif font-bold text-white tracking-tight">
             Historial de Mesas & Platos Consumidos
           </h1>
           <p className="text-sm text-stone-400 mt-1 max-w-2xl">

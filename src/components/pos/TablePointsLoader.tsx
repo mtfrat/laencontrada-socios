@@ -262,47 +262,47 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
   // Si ya se acreditó exitosamente, mostramos la pantalla de confirmación
   if (successData) {
     return (
-      <div className="bg-stone-800 rounded-3xl p-6 sm:p-8 border border-emerald-500/40 text-center shadow-xl">
-        <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
+      <div className="bg-[#0d0708] rounded-3xl p-6 sm:p-8 border border-emerald-500/40 text-center shadow-2xl space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-2">
           <CheckCircle2 className="w-8 h-8" />
         </div>
 
         <h2 className="text-2xl font-serif font-bold text-white">
           ¡Puntos Acreditados con Éxito!
         </h2>
-        <p className="text-stone-400 text-sm mt-1">
+        <p className="text-stone-300 text-sm">
           La mesa fue registrada y los puntos se encuentran disponibles en la cuenta del cliente.
         </p>
 
         {/* Resumen numérico */}
         <div className="grid grid-cols-2 gap-3 my-6 max-w-sm mx-auto">
-          <div className="bg-stone-900 p-3.5 rounded-2xl border border-stone-700">
-            <p className="text-[11px] text-stone-400">Puntos por Socio</p>
-            <p className="text-2xl font-bold font-mono text-amber-400 mt-0.5">
+          <div className="bg-[#150c0e] p-3.5 rounded-2xl border border-[#5c131d]/35">
+            <p className="text-[11px] text-stone-400 uppercase tracking-wider">Puntos por Socio</p>
+            <p className="text-2xl font-bold font-mono text-[#d4aa58] mt-0.5">
               +{successData.puntosPorSocio} pts
             </p>
           </div>
-          <div className="bg-stone-900 p-3.5 rounded-2xl border border-stone-700">
-            <p className="text-[11px] text-stone-400">Gasto Individual</p>
-            <p className="text-2xl font-bold font-mono text-stone-200 mt-0.5">
+          <div className="bg-[#150c0e] p-3.5 rounded-2xl border border-stone-800">
+            <p className="text-[11px] text-stone-400 uppercase tracking-wider">Gasto Individual</p>
+            <p className="text-2xl font-bold font-mono text-white mt-0.5">
               ${successData.gastoPromedioPorPersona.toLocaleString("es-AR")}
             </p>
           </div>
         </div>
 
         {/* Lista de socios beneficiados */}
-        <div className="bg-stone-900/80 rounded-2xl p-4 border border-stone-700/80 max-w-md mx-auto text-left mb-6">
-          <p className="text-xs font-semibold uppercase text-stone-400 mb-2.5">
+        <div className="bg-[#150c0e] rounded-2xl p-4 border border-[#5c131d]/30 max-w-md mx-auto text-left mb-6">
+          <p className="text-xs font-semibold uppercase text-[#ce7281] mb-2.5">
             Socios que recibieron puntos:
           </p>
           <div className="space-y-2">
             {successData.sociosAcreditados.map((s) => (
-              <div key={s.id} className="flex items-center justify-between text-xs py-1 border-b border-stone-800 last:border-none">
+              <div key={s.id} className="flex items-center justify-between text-xs py-1 border-b border-stone-800/80 last:border-none">
                 <div>
                   <span className="font-semibold text-white">{s.nombre}</span>
                   <span className="text-stone-400 text-[11px] ml-2 font-mono">DNI: {s.dni}</span>
                 </div>
-                <span className="font-mono font-bold text-emerald-400">
+                <span className="font-mono font-bold text-[#d4aa58]">
                   Nuevo saldo: {s.puntosActuales} pts
                 </span>
               </div>
@@ -312,7 +312,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
         <button
           onClick={resetForm}
-          className="py-3.5 px-6 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-2xl shadow-lg transition"
+          className="py-3.5 px-6 bg-[#5c131d] hover:bg-[#7a1a27] text-white font-bold rounded-2xl shadow-xl transition"
         >
           Cargar Siguiente Mesa
         </button>
@@ -321,10 +321,10 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
   }
 
   return (
-    <div className="bg-stone-800 rounded-3xl p-6 sm:p-8 border border-stone-700 shadow-xl">
-      <div className="flex items-center justify-between pb-5 border-b border-stone-700/60 mb-6">
+    <div className="bg-[#0d0708] rounded-3xl p-6 sm:p-8 border border-[#5c131d]/35 shadow-2xl space-y-6">
+      <div className="flex items-center justify-between pb-5 border-b border-stone-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-[#5c131d]/25 text-[#ce7281] border border-[#5c131d]/40 flex items-center justify-center">
             <Calculator className="w-5 h-5" />
           </div>
           <div>
@@ -337,7 +337,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
       </div>
 
       {error && (
-        <div className="mb-6 p-3.5 bg-red-950/60 border border-red-800 text-red-200 text-xs sm:text-sm rounded-xl flex items-start gap-2.5">
+        <div className="p-3.5 bg-red-950/60 border border-red-800 text-red-200 text-xs sm:text-sm rounded-xl flex items-start gap-2.5">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -352,7 +352,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               1. Monto Total del Ticket ($)
             </label>
             <div className="relative">
-              <DollarSign className="w-5 h-5 text-stone-400 absolute left-3.5 top-3.5" />
+              <DollarSign className="w-5 h-5 text-stone-500 absolute left-3.5 top-3.5" />
               <input
                 type="number"
                 inputMode="numeric"
@@ -361,7 +361,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                 placeholder="Ej: 100000"
                 value={totalTicket}
                 onChange={(e) => setTotalTicket(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-stone-900 border border-stone-700 rounded-2xl text-xl font-mono text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                className="w-full pl-10 pr-4 py-3 bg-[#050304] border border-stone-800 rounded-2xl text-xl font-mono text-white placeholder:text-stone-600 focus:outline-none focus:border-[#5c131d] focus:ring-1 focus:ring-[#5c131d] transition"
               />
             </div>
 
@@ -372,7 +372,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                   key={val}
                   type="button"
                   onClick={() => setTotalTicket(String(val))}
-                  className="text-[10px] font-mono bg-stone-900 hover:bg-stone-700 text-stone-400 hover:text-white px-2 py-1 rounded-lg border border-stone-700 transition"
+                  className="text-[10px] font-mono bg-[#150c0e] hover:bg-[#5c131d]/30 text-stone-300 hover:text-white px-2.5 py-1 rounded-lg border border-stone-800 hover:border-[#5c131d]/40 transition"
                 >
                   ${val / 1000}k
                 </button>
@@ -389,18 +389,18 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <button
                 type="button"
                 onClick={() => setComensales((c) => Math.max(1, c - 1))}
-                className="w-12 h-12 rounded-2xl bg-stone-900 hover:bg-stone-700 text-stone-200 border border-stone-700 flex items-center justify-center font-bold text-lg transition"
+                className="w-12 h-12 rounded-2xl bg-[#150c0e] hover:bg-[#5c131d]/40 text-stone-200 border border-stone-800 hover:border-[#5c131d]/40 flex items-center justify-center font-bold text-lg transition"
               >
                 -
               </button>
-              <div className="flex-1 text-center py-2.5 bg-stone-900 border border-stone-700 rounded-2xl">
+              <div className="flex-1 text-center py-2.5 bg-[#050304] border border-stone-800 rounded-2xl">
                 <span className="text-2xl font-bold font-mono text-white">{comensales}</span>
                 <span className="text-xs text-stone-400 ml-1.5">personas</span>
               </div>
               <button
                 type="button"
                 onClick={() => setComensales((c) => c + 1)}
-                className="w-12 h-12 rounded-2xl bg-stone-900 hover:bg-stone-700 text-stone-200 border border-stone-700 flex items-center justify-center font-bold text-lg transition"
+                className="w-12 h-12 rounded-2xl bg-[#150c0e] hover:bg-[#5c131d]/40 text-stone-200 border border-stone-800 hover:border-[#5c131d]/40 flex items-center justify-center font-bold text-lg transition"
               >
                 +
               </button>
@@ -415,8 +415,8 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                   onClick={() => setComensales(num)}
                   className={`flex-1 text-[11px] font-mono py-1 rounded-lg border transition ${
                     comensales === num
-                      ? "bg-orange-600 text-white border-orange-500 font-bold"
-                      : "bg-stone-900 text-stone-400 hover:text-white border-stone-700"
+                      ? "bg-[#5c131d] text-white border-[#7a1a27] font-bold shadow-md"
+                      : "bg-[#150c0e] text-stone-400 hover:text-white border-stone-800"
                   }`}
                 >
                   {num}
@@ -427,7 +427,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
         </div>
 
         {/* RESUMEN DE CÁLCULO EN VIVO */}
-        <div className="bg-gradient-to-r from-stone-900 to-stone-950 p-4 rounded-2xl border border-stone-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-gradient-to-r from-[#150c0e] to-[#0d0708] p-4 rounded-2xl border border-[#5c131d]/35 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
           <div>
             <span className="text-xs text-stone-400">Gasto Individual Promedio:</span>
             <p className="text-lg font-mono font-bold text-stone-200">
@@ -435,10 +435,10 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
             </p>
           </div>
           <div className="sm:text-right">
-            <span className="text-xs text-amber-400 font-semibold uppercase flex items-center gap-1 sm:justify-end">
-              <Sparkles className="w-3.5 h-3.5" /> Puntos a sumar por socio:
+            <span className="text-xs text-[#ce7281] font-semibold uppercase flex items-center gap-1 sm:justify-end">
+              <Sparkles className="w-3.5 h-3.5 text-[#d4aa58]" /> Puntos a sumar por socio:
             </span>
-            <p className="text-2xl font-mono font-extrabold text-amber-400">
+            <p className="text-2xl font-mono font-extrabold text-[#d4aa58]">
               {puntosCalculados} <span className="text-sm font-semibold">pts</span>
             </p>
           </div>
@@ -454,7 +454,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <button
                 type="button"
                 onClick={() => openAltaModal(searchQuery)}
-                className="text-xs text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-xl border border-orange-500/30 transition shadow-sm"
+                className="text-xs text-[#ce7281] hover:text-white font-semibold flex items-center gap-1.5 bg-[#5c131d]/20 hover:bg-[#5c131d]/40 px-3 py-1.5 rounded-xl border border-[#5c131d]/40 transition shadow-sm"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>+ Registrar Nuevo Socio</span>
@@ -462,7 +462,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <button
                 type="button"
                 onClick={addTestSocio}
-                className="text-[11px] text-stone-400 hover:text-amber-400 hover:underline hidden md:inline-block"
+                className="text-[11px] text-stone-500 hover:text-[#d4aa58] hover:underline hidden md:inline-block"
               >
                 + Demo (12345678)
               </button>
@@ -475,7 +475,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               {selectedSocios.map((socio) => (
                 <div
                   key={socio.id}
-                  className="bg-stone-900 text-stone-100 pl-3 pr-2 py-1.5 rounded-xl border border-orange-500/40 flex items-center gap-2 text-xs shadow-sm"
+                  className="bg-[#150c0e] text-stone-100 pl-3 pr-2 py-1.5 rounded-xl border border-[#5c131d]/50 flex items-center gap-2 text-xs shadow-sm"
                 >
                   <div>
                     <span className="font-bold text-white">{socio.nombre} {socio.apellido || ""}</span>
@@ -484,7 +484,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                   <button
                     type="button"
                     onClick={() => removeSocio(socio.id)}
-                    className="w-5 h-5 rounded-lg bg-stone-800 hover:bg-red-900/60 text-stone-400 hover:text-red-300 flex items-center justify-center transition"
+                    className="w-5 h-5 rounded-lg bg-stone-900 hover:bg-red-900/60 text-stone-400 hover:text-red-300 flex items-center justify-center transition"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -495,27 +495,27 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
           {/* Buscador de socios */}
           <div className="relative">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5" />
+            <Search className="w-4 h-4 text-stone-500 absolute left-3.5 top-3.5" />
             <input
               type="text"
               placeholder="Buscar por DNI o Nombre de socio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-stone-900 border border-stone-700 rounded-xl text-sm text-white placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#050304] border border-stone-800 rounded-xl text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-[#5c131d] transition"
             />
             {searching && (
-              <Loader2 className="w-4 h-4 text-stone-400 animate-spin absolute right-3.5 top-3.5" />
+              <Loader2 className="w-4 h-4 text-[#ce7281] animate-spin absolute right-3.5 top-3.5" />
             )}
 
             {/* Dropdown de resultados */}
             {searchResults.length > 0 && (
-              <div className="absolute z-20 left-0 right-0 mt-1.5 bg-stone-900 border border-stone-700 rounded-2xl shadow-2xl overflow-hidden divide-y divide-stone-800">
+              <div className="absolute z-20 left-0 right-0 mt-1.5 bg-[#0d0708] border border-stone-800 rounded-2xl shadow-2xl overflow-hidden divide-y divide-stone-800/80">
                 {searchResults.map((s) => (
                   <button
                     key={s.id}
                     type="button"
                     onClick={() => addSocio(s)}
-                    className="w-full px-4 py-2.5 text-left hover:bg-stone-800 flex items-center justify-between text-xs transition"
+                    className="w-full px-4 py-2.5 text-left hover:bg-[#150c0e] flex items-center justify-between text-xs transition"
                   >
                     <div>
                       <p className="font-bold text-white">{s.nombre} {s.apellido || ""}</p>
@@ -524,10 +524,10 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-amber-400 font-semibold">
+                      <span className="font-mono text-[#d4aa58] font-semibold">
                         {s.puntosActuales} pts
                       </span>
-                      <span className="p-1 rounded bg-orange-600 text-white">
+                      <span className="p-1 rounded bg-[#5c131d] text-white">
                         <Plus className="w-3 h-3" />
                       </span>
                     </div>
@@ -539,10 +539,10 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
           {/* Sugerencia de alta cuando no se encuentra el socio buscado */}
           {searchQuery.trim().length >= 3 && !searching && searchResults.length === 0 && (
-            <div className="mt-2.5 p-3.5 bg-stone-900 border border-orange-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="mt-2.5 p-3.5 bg-[#150c0e] border border-[#5c131d]/35 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <div className="text-stone-300 text-center sm:text-left">
                 <span className="font-bold text-white flex items-center gap-1.5 justify-center sm:justify-start">
-                  <AlertCircle className="w-4 h-4 text-orange-400" />
+                  <AlertCircle className="w-4 h-4 text-[#ce7281]" />
                   ¿Socio no registrado?
                 </span>
                 <p className="text-stone-400 text-[11px] mt-0.5">
@@ -552,7 +552,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <button
                 type="button"
                 onClick={() => openAltaModal(searchQuery)}
-                className="shrink-0 bg-orange-600 hover:bg-orange-500 text-white font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
+                className="shrink-0 bg-[#5c131d] hover:bg-[#7a1a27] text-white font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>Dar de alta a este socio</span>
@@ -571,7 +571,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
             placeholder="Ej: Mesa 12 - Cumpleaños"
             value={notas}
             onChange={(e) => setNotas(e.target.value)}
-            className="w-full px-3.5 py-2 bg-stone-900 border border-stone-700 rounded-xl text-xs text-stone-200 placeholder:text-stone-600 focus:outline-none focus:ring-1 focus:ring-orange-500 transition"
+            className="w-full px-3.5 py-2 bg-[#050304] border border-stone-800 rounded-xl text-xs text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-[#5c131d] transition"
           />
         </div>
 
@@ -579,7 +579,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
         <button
           type="submit"
           disabled={submitting || selectedSocios.length === 0 || !totalTicket}
-          className="w-full py-4 px-6 bg-orange-600 hover:bg-orange-500 disabled:bg-stone-700 disabled:text-stone-500 text-white font-bold text-base rounded-2xl shadow-lg transition flex items-center justify-center gap-2"
+          className="w-full py-4 px-6 bg-[#5c131d] hover:bg-[#7a1a27] disabled:bg-stone-900 disabled:text-stone-600 text-white font-bold text-base rounded-2xl shadow-xl transition flex items-center justify-center gap-2"
         >
           {submitting ? (
             <>
@@ -597,11 +597,11 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
       {/* MODAL ALTA RÁPIDA DE SOCIO EN SALÓN */}
       {altaModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-stone-900 border border-stone-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0d0708] border border-[#5c131d]/50 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-stone-800/80 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-[#5c131d]/25 text-[#ce7281] border border-[#5c131d]/40 flex items-center justify-center">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
@@ -642,14 +642,14 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                     placeholder="Ej: 38450123"
                     value={altaDni}
                     onChange={(e) => setAltaDni(e.target.value)}
-                    className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2.5 text-stone-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2.5 text-stone-100 font-mono text-sm focus:outline-none focus:border-[#5c131d]"
                   />
                 </div>
 
                 {/* Teléfono */}
                 <div>
                   <label className="block font-semibold text-stone-300 mb-1 flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-stone-400" />
+                    <Phone className="w-3 h-3 text-[#ce7281]" />
                     <span>WhatsApp (Opcional)</span>
                   </label>
                   <input
@@ -657,7 +657,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                     placeholder="Ej: 2914123456"
                     value={altaTelefono}
                     onChange={(e) => setAltaTelefono(e.target.value)}
-                    className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:border-[#5c131d]"
                   />
                 </div>
               </div>
@@ -674,7 +674,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                     placeholder="Ej: Carolina"
                     value={altaNombre}
                     onChange={(e) => setAltaNombre(e.target.value)}
-                    className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:border-[#5c131d]"
                   />
                 </div>
 
@@ -688,7 +688,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                     placeholder="Ej: Gómez"
                     value={altaApellido}
                     onChange={(e) => setAltaApellido(e.target.value)}
-                    className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:border-[#5c131d]"
                   />
                 </div>
               </div>
@@ -696,7 +696,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               {/* Email */}
               <div>
                 <label className="block font-semibold text-stone-300 mb-1 flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-stone-400" />
+                  <Mail className="w-3 h-3 text-[#ce7281]" />
                   <span>Email (Opcional)</span>
                 </label>
                 <input
@@ -704,12 +704,12 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                   placeholder="ejemplo@email.com"
                   value={altaEmail}
                   onChange={(e) => setAltaEmail(e.target.value)}
-                  className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2.5 text-stone-100 text-sm focus:outline-none focus:border-[#5c131d]"
                 />
               </div>
 
               {/* Acciones */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800/80">
                 <button
                   type="button"
                   disabled={altaSubmitting}
@@ -722,7 +722,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                 <button
                   type="submit"
                   disabled={altaSubmitting}
-                  className="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 disabled:bg-stone-700 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-xs"
+                  className="px-5 py-2.5 bg-[#5c131d] hover:bg-[#7a1a27] disabled:opacity-50 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-xs"
                 >
                   {altaSubmitting ? (
                     <>

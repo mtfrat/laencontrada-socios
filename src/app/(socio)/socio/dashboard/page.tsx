@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getSocioSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SocioLogoutButton from "@/components/socio/LogoutButton";
-import { Award, Gift, Trophy, Clock, UtensilsCrossed, Sparkles } from "lucide-react";
+import { Gift, Trophy, Clock, UtensilsCrossed, Sparkles, ChevronRight, Wine } from "lucide-react";
 
 export default async function SocioDashboardPage() {
   const session = await getSocioSession();
@@ -33,19 +34,25 @@ export default async function SocioDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fbf7f0] text-stone-900 pb-12">
-      {/* Header */}
-      <header className="bg-white border-b border-amber-200/60 sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-800 text-amber-50 flex items-center justify-center font-serif font-bold text-sm">
-              E
-            </div>
+    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
+      {/* Header with Official Logo */}
+      <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
+        <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/logo.png"
+              alt="La Encontrada Wine Bistro"
+              width={38}
+              height={38}
+              className="drop-shadow-[0_2px_10px_rgba(92,19,29,0.5)]"
+            />
             <div>
-              <p className="text-xs font-semibold text-amber-950 font-serif leading-none">
+              <p className="text-xs font-serif font-bold text-white leading-none">
                 La Encontrada
               </p>
-              <p className="text-[10px] text-amber-800/70 font-medium">Club de Socios</p>
+              <p className="text-[10px] text-[#ce7281] font-semibold tracking-wider uppercase mt-0.5">
+                Wine Bistro • Socios
+              </p>
             </div>
           </div>
           <SocioLogoutButton />
@@ -57,56 +64,68 @@ export default async function SocioDashboardPage() {
         {/* Welcome Salutation */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-serif font-bold text-stone-900">
+            <h1 className="text-xl font-serif font-bold text-white tracking-tight">
               ¡Hola, {socio.nombre}!
             </h1>
-            <p className="text-xs text-stone-500">Bienvenido a tu panel de beneficios</p>
+            <p className="text-xs text-stone-400">Bienvenido a tu membresía Wine Bistro</p>
           </div>
-          <span className="text-[11px] font-mono bg-amber-100 text-amber-900 font-semibold px-2.5 py-1 rounded-full border border-amber-200">
+          <span className="text-[11px] font-mono bg-[#5c131d]/20 text-[#f5ede6] font-semibold px-3 py-1 rounded-full border border-[#5c131d]/40">
             {socio.numeroSocio}
           </span>
         </div>
 
-        {/* Tarjeta Digital de Socio */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-900 via-amber-800 to-stone-900 text-amber-50 p-6 shadow-xl border border-amber-700/50">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl" />
-          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl" />
+        {/* Tarjeta Digital de Socio - Velvet Wine Bistro VIP Card */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5c131d] via-[#3a0b12] to-[#0d0406] text-white p-6 shadow-2xl border border-[#5c131d]/50">
+          {/* Ambient Lighting Orbs */}
+          <div className="absolute top-0 right-0 -mr-10 -mt-10 w-44 h-44 bg-[#7a1a27]/30 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-44 h-44 bg-[#5c131d]/20 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex justify-between items-start mb-6">
-            <div>
-              <p className="text-[10px] uppercase font-mono tracking-widest text-amber-300/80">
-                Tarjeta Digital de Membresía
-              </p>
-              <h2 className="text-lg font-serif font-bold text-white tracking-wide">
-                La Encontrada
-              </h2>
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={32}
+                height={32}
+                className="opacity-90"
+              />
+              <div>
+                <p className="text-[10px] uppercase font-mono tracking-widest text-[#e18693]">
+                  Membresía Exclusiva
+                </p>
+                <h2 className="text-base font-serif font-bold text-white tracking-wide">
+                  La Encontrada
+                </h2>
+              </div>
             </div>
-            <Sparkles className="w-5 h-5 text-amber-300" />
+            <span className="text-[10px] font-mono uppercase bg-black/40 text-[#f5ede6] px-2 py-0.5 rounded-md border border-[#5c131d]/40">
+              Socio Activo
+            </span>
           </div>
 
           <div className="relative z-10 my-4">
-            <p className="text-xs text-amber-200/80 font-medium">Puntos Disponibles para Canje</p>
+            <p className="text-xs text-stone-300 font-medium">Puntos Disponibles para Canje</p>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-4xl font-extrabold text-amber-300 tracking-tight font-mono">
+              <span className="text-4xl sm:text-5xl font-extrabold text-[#d4aa58] tracking-tight font-mono">
                 {socio.puntosActuales.toLocaleString("es-AR")}
               </span>
-              <span className="text-xs font-semibold uppercase text-amber-200/70 tracking-wider">
+              <span className="text-xs font-semibold uppercase text-stone-400 tracking-wider">
                 pts
               </span>
             </div>
           </div>
 
-          <div className="relative z-10 pt-4 border-t border-amber-700/40 flex justify-between items-end text-xs">
+          <div className="relative z-10 pt-4 border-t border-white/10 flex justify-between items-end text-xs">
             <div>
-              <p className="text-[10px] text-amber-300/70 uppercase">Titular</p>
+              <p className="text-[10px] text-stone-400 uppercase tracking-wider">Titular</p>
               <p className="font-semibold text-white tracking-wide">
                 {socio.nombre} {socio.apellido || ""}
               </p>
-              <p className="text-[10px] font-mono text-amber-200/60">DNI: {socio.dni}</p>
+              <p className="text-[10px] font-mono text-stone-400">DNI: {socio.dni}</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] text-amber-300/70 uppercase">Puntos Históricos</p>
-              <p className="font-mono font-bold text-amber-200">
+              <p className="text-[10px] text-stone-400 uppercase tracking-wider">Puntos Históricos</p>
+              <p className="font-mono font-bold text-stone-200">
                 {socio.puntosHistoricos.toLocaleString("es-AR")} pts
               </p>
             </div>
@@ -117,130 +136,111 @@ export default async function SocioDashboardPage() {
         <div className="grid grid-cols-2 gap-3">
           <Link
             href="/socio/premios"
-            className="p-4 bg-white rounded-2xl border border-amber-200/60 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+            className="p-4 bg-[#0d0708] rounded-2xl border border-[#5c131d]/35 hover:border-[#5c131d] shadow-lg transition flex flex-col justify-between group"
           >
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#e18693] border border-[#5c131d]/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
               <Gift className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-stone-900">Catálogo de Premios</h3>
-              <p className="text-[11px] text-stone-500 mt-0.5">Canjeá tus puntos por cortesías</p>
+              <h3 className="font-bold text-sm text-white">Catálogo de Premios</h3>
+              <p className="text-[11px] text-stone-400 mt-0.5">Canjeá vinos, postres y cortesías</p>
             </div>
           </Link>
 
           <Link
             href="/socio/ranking"
-            className="p-4 bg-white rounded-2xl border border-amber-200/60 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+            className="p-4 bg-[#0d0708] rounded-2xl border border-stone-800 hover:border-[#5c131d]/60 shadow-lg transition flex flex-col justify-between group"
           >
-            <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-800 flex items-center justify-center mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mb-3 group-hover:scale-105 transition">
               <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-stone-900">Ranking de Socios</h3>
-              <p className="text-[11px] text-stone-500 mt-0.5">Líderes de fidelidad del mes</p>
+              <h3 className="font-bold text-sm text-white">Ranking de Socios</h3>
+              <p className="text-[11px] text-stone-400 mt-0.5">Líderes de fidelidad del bistró</p>
             </div>
           </Link>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-4 border border-amber-200/60 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-amber-800" />
+        {/* Acceso a Historial Completo */}
+        <Link
+          href="/socio/historial"
+          className="p-4 bg-[#0d0708] rounded-2xl border border-stone-800 hover:border-[#5c131d]/60 transition flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-stone-900 text-stone-300 border border-stone-800 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-[#ce7281]" />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-white">Historial de Visitas & Consumos</p>
+              <p className="text-[11px] text-stone-400">Tus mesas, platos degustados y encuestas</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-stone-500" />
+        </Link>
+
+        {/* Últimos Movimientos */}
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-400">
               Últimos Movimientos
-            </h3>
-            <Link
-              href="/socio/historial"
-              className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 transition"
-            >
-              Ver todo →
+            </h2>
+            <Link href="/socio/historial" className="text-[11px] text-[#ce7281] hover:underline">
+              Ver todos →
             </Link>
           </div>
 
-          {socio.transacciones.length === 0 ? (
-            <div className="text-center py-6 text-stone-400 text-xs">
-              <UtensilsCrossed className="w-8 h-8 mx-auto mb-2 text-stone-300" />
-              Todavía no registras consumos. ¡Cada visita a La Encontrada suma puntos!
-            </div>
-          ) : (
-            <div className="divide-y divide-stone-100 text-xs">
-              {socio.transacciones.map((tx) => (
-                <div key={tx.id} className="py-2.5 flex items-center justify-between">
+          <div className="bg-[#0d0708] rounded-2xl border border-stone-800/80 divide-y divide-stone-800/60 overflow-hidden shadow-lg">
+            {socio.transacciones.length === 0 ? (
+              <div className="p-5 text-center text-xs text-stone-500">
+                Aún no registras movimientos de puntos.
+              </div>
+            ) : (
+              socio.transacciones.map((t) => (
+                <div key={t.id} className="p-3.5 flex items-center justify-between text-xs">
                   <div>
-                    <p className="font-medium text-stone-800">{tx.motivo}</p>
-                    <p className="text-[10px] text-stone-400">
-                      {new Date(tx.createdAt).toLocaleDateString("es-AR", {
+                    <p className="font-semibold text-white">{t.motivo}</p>
+                    <p className="text-[10px] text-stone-500 mt-0.5">
+                      {new Date(t.createdAt).toLocaleDateString("es-AR", {
                         day: "2-digit",
                         month: "short",
-                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </p>
                   </div>
                   <span
-                    className={`font-mono font-bold ${
-                      tx.puntos >= 0 ? "text-emerald-700" : "text-red-600"
+                    className={`font-mono font-bold text-sm ${
+                      t.puntos > 0 ? "text-[#d4aa58]" : "text-stone-400"
                     }`}
                   >
-                    {tx.puntos > 0 ? `+${tx.puntos}` : tx.puntos} pts
+                    {t.puntos > 0 ? `+${t.puntos}` : t.puntos} pts
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
 
-        {/* Mis Visitas y Experiencias Gastronómicas */}
+        {/* Sugerencia de Encuesta si tiene visita reciente sin responder */}
         {socio.visitas.length > 0 && (
-          <div className="bg-white rounded-2xl p-4 border border-amber-200/60 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
-              <UtensilsCrossed className="w-3.5 h-3.5 text-amber-800" />
-              Tus Platos y Experiencias en La Encontrada
-            </h3>
-
-            <div className="space-y-2.5">
-              {socio.visitas.map((v) => (
-                <div key={v.id} className="p-3 rounded-xl bg-stone-50 border border-amber-100 text-xs">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-semibold text-stone-800">
-                      Turno {v.franjaHoraria} • {v.cantidadComensales} {v.cantidadComensales === 1 ? "persona" : "personas"}
-                    </span>
-                    <span className="font-mono text-[11px] text-amber-800 font-bold">
-                      +{v.puntosAcreditados} pts
-                    </span>
-                  </div>
-
-                  {v.platos.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {v.platos.map((p) => (
-                        <span
-                          key={p.id}
-                          className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-md font-medium"
-                        >
-                          <span className="font-bold">{p.cantidad}x</span> {p.nombrePlato}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-stone-400 italic">
-                      Consumo promedio: ${Number(v.gastoPromedioPorPersona).toLocaleString("es-AR")} por persona
-                    </p>
-                  )}
-                </div>
-              ))}
+          <div className="p-4 bg-gradient-to-r from-[#3a0b12] to-[#0d0708] rounded-2xl border border-[#5c131d]/50 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#5c131d]/30 text-[#e18693] flex items-center justify-center shrink-0">
+                <Wine className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-bold text-xs text-white">¿Disfrutaste tu última visita?</p>
+                <p className="text-[10px] text-stone-400">Calificá tu experiencia y sumá puntos extra</p>
+              </div>
             </div>
+            <Link
+              href={`/socio/encuesta/${socio.visitas[0].id}`}
+              className="bg-[#5c131d] hover:bg-[#7a1a27] text-white px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition shadow"
+            >
+              Opinar
+            </Link>
           </div>
         )}
-
-        {/* How to Earn Points Tip */}
-        <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200/60 text-xs text-amber-900 leading-relaxed">
-          <p className="font-semibold mb-1 flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-amber-800" />
-            ¿Cómo sumar más puntos en mesa?
-          </p>
-          <p className="text-amber-800/80">
-            Al pedir la cuenta, recordale al mozo tu número de DNI. Si comparten la mesa con amigos o familia, el consumo se divide entre todos sumando puntos para vos y tus acompañantes.
-          </p>
-        </div>
       </main>
     </div>
   );

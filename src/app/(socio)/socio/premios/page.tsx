@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Gift,
@@ -16,6 +17,7 @@ import {
   PackageX,
   X,
   ChevronRight,
+  Wine,
 } from "lucide-react";
 
 interface PremioCatalogo {
@@ -91,19 +93,17 @@ export default function SocioPremiosPage() {
 
       const data = await res.json();
       if (data.success) {
-        // Redirigir a la pantalla del cupón QR
         router.push(`/socio/canje/${data.canjeId}`);
       } else {
         if (data.canjePendienteId) {
-          // Si ya tenía uno, sugerir ir al cupón activo
           setErrorMessage(data.error);
         } else {
-          setErrorMessage(data.error || "No se pudo generar el cupón.");
+          setErrorMessage(data.error || "No se pudo solicitar el canje.");
         }
         setPremioSeleccionado(null);
       }
     } catch {
-      setErrorMessage("Error de red al procesar el canje.");
+      setErrorMessage("Error de red al procesar tu solicitud.");
       setPremioSeleccionado(null);
     } finally {
       setCanjeando(false);
@@ -111,32 +111,40 @@ export default function SocioPremiosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbf7f0] text-stone-900 pb-16">
+    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Header */}
-      <header className="bg-white border-b border-amber-200/60 sticky top-0 z-20">
+      <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/socio/dashboard"
-              className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 transition"
+              className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-800 transition"
               title="Volver a mi panel"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div>
-              <p className="text-xs font-semibold text-amber-950 font-serif leading-none">
-                La Encontrada
-              </p>
-              <h1 className="text-sm font-bold text-stone-900">Catálogo de Premios</h1>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={28}
+                height={28}
+              />
+              <div>
+                <p className="text-[10px] uppercase font-mono tracking-widest text-[#ce7281] leading-none">
+                  Catálogo
+                </p>
+                <h1 className="text-sm font-serif font-bold text-white">Premios & Recompensas</h1>
+              </div>
             </div>
           </div>
 
           {socio && (
             <div className="text-right">
-              <span className="text-[10px] text-stone-500 uppercase tracking-wider font-medium">
+              <span className="text-[10px] text-stone-400 uppercase tracking-wider font-medium">
                 Disponibles
               </span>
-              <p className="text-sm font-bold font-mono text-amber-800 leading-none">
+              <p className="text-sm font-bold font-mono text-[#d4aa58] leading-none">
                 {socio.puntosDisponibles.toLocaleString("es-AR")} pts
               </p>
             </div>
@@ -148,22 +156,22 @@ export default function SocioPremiosPage() {
       <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
         {/* Banner si tiene un cupón activo pendiente */}
         {socio?.canjeActivo && (
-          <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-2xl p-4 shadow-md flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#5c131d] via-[#7a1a27] to-[#3a0b12] text-white rounded-3xl p-4 shadow-xl border border-[#5c131d]/60 flex items-center justify-between">
             <div className="space-y-0.5">
-              <div className="flex items-center gap-1.5 text-amber-200 text-xs font-semibold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-[#e18693] text-xs font-semibold uppercase tracking-wider">
                 <Clock className="w-3.5 h-3.5 animate-pulse" />
                 <span>Cupón Activo en Espera</span>
               </div>
-              <p className="text-sm font-bold">{socio.canjeActivo.premioTitulo}</p>
-              <p className="text-[11px] text-amber-100">
-                Código: <span className="font-mono font-bold">{socio.canjeActivo.codigoQR}</span>
+              <p className="text-sm font-bold text-white">{socio.canjeActivo.premioTitulo}</p>
+              <p className="text-[11px] text-stone-300">
+                Código: <span className="font-mono font-bold text-white">{socio.canjeActivo.codigoQR}</span>
               </p>
             </div>
             <Link
               href={`/socio/canje/${socio.canjeActivo.id}`}
-              className="bg-white text-amber-900 px-3 py-2 rounded-xl text-xs font-bold shadow hover:bg-amber-50 transition shrink-0 flex items-center gap-1"
+              className="bg-white text-stone-950 px-3.5 py-2 rounded-xl text-xs font-bold shadow hover:bg-[#f5ede6] transition shrink-0 flex items-center gap-1"
             >
-              <QrCode className="w-4 h-4" />
+              <QrCode className="w-4 h-4 text-[#5c131d]" />
               <span>Ver QR</span>
             </Link>
           </div>
@@ -171,15 +179,15 @@ export default function SocioPremiosPage() {
 
         {/* Error notification */}
         {errorMessage && (
-          <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-2xl text-xs flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+          <div className="bg-red-950/60 border border-red-800/80 text-red-200 p-3.5 rounded-2xl text-xs flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <span>{errorMessage}</span>
               {socio?.canjeActivo && (
                 <div className="mt-1">
                   <Link
                     href={`/socio/canje/${socio.canjeActivo.id}`}
-                    className="font-bold underline text-red-900"
+                    className="font-bold underline text-[#e18693]"
                   >
                     Ir a mi cupón pendiente →
                   </Link>
@@ -188,7 +196,7 @@ export default function SocioPremiosPage() {
             </div>
             <button
               onClick={() => setErrorMessage(null)}
-              className="text-red-500 hover:text-red-700"
+              className="text-red-400 hover:text-white"
             >
               <X className="w-4 h-4" />
             </button>
@@ -196,14 +204,14 @@ export default function SocioPremiosPage() {
         )}
 
         {/* Intro */}
-        <div className="bg-white rounded-2xl p-4 border border-amber-200/60 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+        <div className="bg-[#0d0708] rounded-2xl p-4 border border-[#5c131d]/30 shadow-lg flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#e18693] border border-[#5c131d]/40 flex items-center justify-center shrink-0">
             <Gift className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-stone-900">Recompensas por tu fidelidad</h2>
-            <p className="text-xs text-stone-500 leading-relaxed">
-              Selecciona el premio que prefieras. Se generará un cupón QR para mostrarle a tu mozo.
+            <h2 className="text-sm font-serif font-bold text-white">Recompensas Exclusivas</h2>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Selecciona tu premio para generar el cupón QR temporal y presentárselo a tu mozo en la mesa.
             </p>
           </div>
         </div>
@@ -211,15 +219,15 @@ export default function SocioPremiosPage() {
         {/* List of Prizes */}
         {loading ? (
           <div className="py-16 text-center text-stone-400 space-y-2">
-            <Loader2 className="w-8 h-8 mx-auto animate-spin text-amber-800" />
-            <p className="text-xs">Cargando premios disponibles...</p>
+            <Loader2 className="w-8 h-8 mx-auto animate-spin text-[#ce7281]" />
+            <p className="text-xs">Cargando catálogo Wine Bistro...</p>
           </div>
         ) : premios.length === 0 ? (
-          <div className="bg-white rounded-3xl p-8 border border-amber-200/60 text-center text-stone-500">
-            <Gift className="w-10 h-10 mx-auto text-amber-700/40 mb-2" />
-            <p className="font-semibold text-sm">Próximamente más premios</p>
-            <p className="text-xs text-stone-400 mt-1">
-              Estamos renovando la carta de beneficios.
+          <div className="bg-[#0d0708] rounded-3xl p-8 border border-stone-800 text-center text-stone-400">
+            <Wine className="w-10 h-10 mx-auto text-[#ce7281]/40 mb-2" />
+            <p className="font-semibold text-sm text-white">Próximamente más recompensas</p>
+            <p className="text-xs text-stone-500 mt-1">
+              Estamos renovando la cava y la carta de beneficios.
             </p>
           </div>
         ) : (
@@ -227,61 +235,55 @@ export default function SocioPremiosPage() {
             {premios.map((p) => (
               <div
                 key={p.id}
-                className={`bg-white rounded-2xl p-4 border transition flex flex-col justify-between shadow-sm ${
+                className={`bg-[#0d0708] rounded-2xl p-4 border transition flex flex-col justify-between shadow-xl ${
                   p.puedeCanjear
-                    ? "border-amber-300 hover:border-amber-400 ring-1 ring-amber-300/40"
-                    : "border-amber-200/60 opacity-90"
+                    ? "border-[#5c131d]/60 hover:border-[#5c131d]"
+                    : "border-stone-800/80 opacity-80"
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <span className="font-mono font-bold text-sm text-amber-900 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
+                    <span className="font-mono font-bold text-sm text-[#d4aa58] bg-[#d4aa58]/10 px-2.5 py-1 rounded-xl border border-[#d4aa58]/30">
                       {p.puntosRequeridos.toLocaleString("es-AR")} pts
                     </span>
 
                     {!p.tieneStock ? (
-                      <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="text-[10px] font-semibold text-stone-400 bg-stone-900 px-2 py-0.5 rounded-full flex items-center gap-1 border border-stone-800">
                         <PackageX className="w-3 h-3" /> Sin stock
                       </span>
                     ) : p.puedeCanjear ? (
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-emerald-600" /> ¡Alcanzas los puntos!
+                      <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-emerald-400" /> ¡Alcanzas los puntos!
                       </span>
                     ) : (
-                      <span className="text-[10px] font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
-                        Te faltan {p.puntosFaltantes.toLocaleString("es-AR")} pts
+                      <span className="text-[10px] font-mono text-stone-400 flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> Te faltan {p.puntosFaltantes} pts
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-sm font-bold text-stone-900">{p.titulo}</h3>
-                  <p className="text-xs text-stone-600 mt-1 leading-relaxed">{p.descripcion}</p>
+                  <h3 className="font-serif font-bold text-base text-white">
+                    {p.titulo}
+                  </h3>
+                  <p className="text-stone-400 text-xs mt-1 leading-relaxed">
+                    {p.descripcion}
+                  </p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
-                  <div className="text-[11px] text-stone-400 font-medium">
-                    {p.stock === -1
-                      ? "Disponibilidad permanente"
-                      : `${p.stock} disponibles`}
-                  </div>
+                <div className="mt-4 pt-3 border-t border-stone-800/60 flex items-center justify-between">
+                  <span className="text-[11px] text-stone-500">
+                    Stock disponible: {p.stock > 999 ? "Ilimitado" : `${p.stock} u.`}
+                  </span>
 
-                  {p.puedeCanjear ? (
-                    <button
-                      onClick={() => setPremioSeleccionado(p)}
-                      className="bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow transition flex items-center gap-1.5"
-                    >
-                      <QrCode className="w-3.5 h-3.5" />
-                      <span>Canjear</span>
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="bg-stone-100 text-stone-400 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-not-allowed flex items-center gap-1"
-                    >
-                      <Lock className="w-3 h-3" />
-                      <span>Bloqueado</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    disabled={!p.puedeCanjear}
+                    onClick={() => setPremioSeleccionado(p)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow disabled:opacity-40 disabled:cursor-not-allowed bg-[#5c131d] hover:bg-[#7a1a27] text-white"
+                  >
+                    <span>Canjear</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -289,52 +291,91 @@ export default function SocioPremiosPage() {
         )}
       </main>
 
-      {/* Modal Confirmación de Canje */}
+      {/* MODAL DE CONFIRMACIÓN DE CANJE */}
       {premioSeleccionado && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in fade-in slide-in-from-bottom-6">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-1">
-              <Gift className="w-6 h-6" />
-            </div>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0d0708] border border-[#5c131d]/50 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#5c131d]/20 rounded-full blur-2xl pointer-events-none" />
 
-            <div className="text-center space-y-1">
-              <h3 className="text-base font-bold text-stone-900">¿Confirmar este canje?</h3>
-              <p className="text-sm font-semibold text-amber-900">
-                {premioSeleccionado.titulo}
-              </p>
-              <p className="text-xs text-stone-500 pt-1 leading-relaxed">
-                Se generará un cupón QR con <span className="font-bold text-stone-800">15 minutos de vigencia</span> para que tu mozo lo escanee en la mesa.
-              </p>
-            </div>
-
-            <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200 text-center">
-              <p className="text-[11px] text-amber-800/80 font-medium">Costo de la recompensa</p>
-              <p className="text-xl font-mono font-extrabold text-amber-950">
-                {premioSeleccionado.puntosRequeridos.toLocaleString("es-AR")} puntos
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="flex items-center justify-between border-b border-stone-800 pb-3 relative z-10">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#5c131d]/20 text-[#e18693] flex items-center justify-center">
+                  <Gift className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-serif font-bold text-white">Confirmar Canje</h3>
+              </div>
               <button
                 type="button"
                 disabled={canjeando}
                 onClick={() => setPremioSeleccionado(null)}
-                className="py-2.5 px-4 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl text-xs transition"
+                className="text-stone-400 hover:text-white p-1 rounded-lg"
               >
-                Volver
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs relative z-10">
+              <div className="bg-[#050304] p-3.5 rounded-2xl border border-stone-800">
+                <p className="text-[10px] text-stone-500 uppercase tracking-wider font-semibold">
+                  Premio Seleccionado
+                </p>
+                <p className="text-sm font-serif font-bold text-white mt-0.5">
+                  {premioSeleccionado.titulo}
+                </p>
+                <p className="text-[11px] text-stone-400 mt-1">
+                  {premioSeleccionado.descripcion}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="bg-[#050304] p-2.5 rounded-xl border border-stone-800">
+                  <p className="text-[10px] text-stone-500">Costo del Canje</p>
+                  <p className="text-sm font-mono font-bold text-[#d4aa58]">
+                    -{premioSeleccionado.puntosRequeridos} pts
+                  </p>
+                </div>
+                <div className="bg-[#050304] p-2.5 rounded-xl border border-stone-800">
+                  <p className="text-[10px] text-stone-500">Tu Saldo Restante</p>
+                  <p className="text-sm font-mono font-bold text-stone-200">
+                    {((socio?.puntosDisponibles || 0) - premioSeleccionado.puntosRequeridos).toLocaleString("es-AR")} pts
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-stone-900/60 rounded-xl border border-stone-800 text-[11px] text-stone-400 flex items-start gap-2">
+                <Clock className="w-4 h-4 text-[#ce7281] shrink-0 mt-0.5" />
+                <span>
+                  Al confirmar, se generará un código QR con <strong>15 minutos</strong> de validez para que el mozo lo valide en tu mesa.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-800 relative z-10">
+              <button
+                type="button"
+                disabled={canjeando}
+                onClick={() => setPremioSeleccionado(null)}
+                className="px-4 py-2.5 text-xs text-stone-400 hover:text-white transition"
+              >
+                Cancelar
               </button>
               <button
                 type="button"
                 disabled={canjeando}
                 onClick={handleConfirmarCanje}
-                className="py-2.5 px-4 bg-amber-800 hover:bg-amber-900 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow"
+                className="px-5 py-2.5 bg-[#5c131d] hover:bg-[#7a1a27] disabled:bg-stone-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow"
               >
                 {canjeando ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Generando cupón...</span>
+                  </>
                 ) : (
-                  <QrCode className="w-4 h-4" />
+                  <>
+                    <QrCode className="w-4 h-4" />
+                    <span>Generar Cupón QR</span>
+                  </>
                 )}
-                <span>Generar QR</span>
               </button>
             </div>
           </div>

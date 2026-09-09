@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  Settings,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -11,9 +10,7 @@ import {
   Sparkles,
   Calculator,
   ShieldAlert,
-  ArrowRight,
   DollarSign,
-  HelpCircle,
 } from "lucide-react";
 
 export default function ConfiguracionManager() {
@@ -93,7 +90,7 @@ export default function ConfiguracionManager() {
   if (loading) {
     return (
       <div className="py-20 text-center text-stone-400 space-y-2">
-        <Loader2 className="w-8 h-8 mx-auto animate-spin text-amber-500" />
+        <Loader2 className="w-8 h-8 mx-auto animate-spin text-[#ce7281]" />
         <p className="text-xs">Cargando reglas comerciales del restaurante...</p>
       </div>
     );
@@ -123,10 +120,10 @@ export default function ConfiguracionManager() {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Card 1: Ratio de Conversión Pesos por Punto */}
-        <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 shadow-md space-y-4">
+        <div className="bg-[#0d0708] border border-[#5c131d]/35 rounded-3xl p-6 shadow-xl space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center font-bold">
                 <DollarSign className="w-5 h-5" />
               </div>
               <div>
@@ -138,7 +135,7 @@ export default function ConfiguracionManager() {
                 </p>
               </div>
             </div>
-            <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+            <span className="font-mono text-xs font-bold text-[#d4aa58] bg-[#5c131d]/25 px-3 py-1 rounded-xl border border-[#5c131d]/40">
               ${pesosPorPunto.toLocaleString("es-AR")} = 1 pt
             </span>
           </div>
@@ -148,7 +145,7 @@ export default function ConfiguracionManager() {
               Monto en pesos por cada 1 punto *
             </label>
             <div className="relative max-w-sm">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold text-base">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 font-bold text-base">
                 $
               </span>
               <input
@@ -158,7 +155,7 @@ export default function ConfiguracionManager() {
                 step={50}
                 value={pesosPorPunto}
                 onChange={(e) => setPesosPorPunto(Math.max(1, parseFloat(e.target.value) || 1))}
-                className="w-full bg-stone-950 border border-stone-700 rounded-2xl pl-8 pr-4 py-3 font-mono font-bold text-lg text-amber-300 focus:outline-none focus:border-amber-500"
+                className="w-full bg-[#050304] border border-stone-800 rounded-2xl pl-8 pr-4 py-3 font-mono font-bold text-lg text-[#d4aa58] focus:outline-none focus:border-[#5c131d]"
               />
             </div>
 
@@ -172,8 +169,8 @@ export default function ConfiguracionManager() {
                   onClick={() => setPesosPorPunto(v)}
                   className={`px-3 py-1 rounded-xl font-mono text-xs font-semibold transition border ${
                     pesosPorPunto === v
-                      ? "bg-amber-600 text-stone-950 border-amber-500 shadow-sm"
-                      : "bg-stone-800 text-stone-300 border-stone-700 hover:bg-stone-700"
+                      ? "bg-[#5c131d] text-white border-[#7a1a27] shadow-sm"
+                      : "bg-[#150c0e] text-stone-300 border-stone-800 hover:bg-stone-800"
                   }`}
                 >
                   ${v.toLocaleString("es-AR")}
@@ -183,9 +180,9 @@ export default function ConfiguracionManager() {
           </div>
 
           {/* Simulador Interactivo */}
-          <div className="bg-stone-950/70 border border-stone-800/80 rounded-2xl p-4 mt-4 space-y-3">
-            <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold uppercase tracking-wider">
-              <Calculator className="w-3.5 h-3.5" />
+          <div className="bg-[#050304] border border-stone-800/80 rounded-2xl p-4 mt-4 space-y-3">
+            <div className="flex items-center gap-2 text-[#ce7281] text-xs font-semibold uppercase tracking-wider">
+              <Calculator className="w-3.5 h-3.5 text-[#d4aa58]" />
               <span>Simulador en Tiempo Real de Mesa</span>
             </div>
 
@@ -197,7 +194,7 @@ export default function ConfiguracionManager() {
                   step={1000}
                   value={simMonto}
                   onChange={(e) => setSimMonto(Math.max(1000, parseFloat(e.target.value) || 0))}
-                  className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-1.5 font-mono text-white"
+                  className="w-full bg-[#150c0e] border border-stone-800 rounded-xl px-3 py-1.5 font-mono text-white focus:outline-none focus:border-[#5c131d]"
                 />
               </div>
 
@@ -209,18 +206,18 @@ export default function ConfiguracionManager() {
                   max={20}
                   value={simComensales}
                   onChange={(e) => setSimComensales(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-1.5 font-mono text-white"
+                  className="w-full bg-[#150c0e] border border-stone-800 rounded-xl px-3 py-1.5 font-mono text-white focus:outline-none focus:border-[#5c131d]"
                 />
               </div>
             </div>
 
-            <div className="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="p-3 bg-[#150c0e] rounded-xl border border-[#5c131d]/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <span className="text-stone-300">
                 Gasto promedio: <strong className="text-white">${Math.round(gastoPorPersona).toLocaleString("es-AR")}</strong> / persona
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="text-stone-400">Cada socio en mesa suma:</span>
-                <span className="font-mono font-extrabold text-amber-400 text-sm bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                <span className="font-mono font-extrabold text-[#d4aa58] text-sm bg-[#5c131d]/20 px-2 py-0.5 rounded-lg border border-[#5c131d]/40">
                   {puntosPorSocio} puntos
                 </span>
               </div>
@@ -229,10 +226,10 @@ export default function ConfiguracionManager() {
         </div>
 
         {/* Card 2: Vigencia de Cupones QR de Premios */}
-        <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 shadow-md space-y-4">
+        <div className="bg-[#0d0708] border border-[#5c131d]/35 rounded-3xl p-6 shadow-xl space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center font-bold">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
@@ -244,7 +241,7 @@ export default function ConfiguracionManager() {
                 </p>
               </div>
             </div>
-            <span className="font-mono text-xs font-bold text-orange-400 bg-orange-500/10 px-3 py-1 rounded-xl border border-orange-500/20">
+            <span className="font-mono text-xs font-bold text-[#d4aa58] bg-[#5c131d]/25 px-3 py-1 rounded-xl border border-[#5c131d]/40">
               {minutosValidezQR} minutos
             </span>
           </div>
@@ -260,7 +257,7 @@ export default function ConfiguracionManager() {
               max={180}
               value={minutosValidezQR}
               onChange={(e) => setMinutosValidezQR(Math.max(1, parseInt(e.target.value) || 1))}
-              className="max-w-sm w-full bg-stone-950 border border-stone-700 rounded-2xl px-4 py-3 font-mono font-bold text-lg text-orange-300 focus:outline-none focus:border-amber-500"
+              className="max-w-sm w-full bg-[#050304] border border-stone-800 rounded-2xl px-4 py-3 font-mono font-bold text-lg text-[#d4aa58] focus:outline-none focus:border-[#5c131d]"
             />
 
             {/* Presets */}
@@ -272,8 +269,8 @@ export default function ConfiguracionManager() {
                   onClick={() => setMinutosValidezQR(m)}
                   className={`px-3 py-1 rounded-xl font-mono text-xs font-semibold transition border ${
                     minutosValidezQR === m
-                      ? "bg-orange-600 text-white border-orange-500 shadow-sm"
-                      : "bg-stone-800 text-stone-300 border-stone-700 hover:bg-stone-700"
+                      ? "bg-[#5c131d] text-white border-[#7a1a27] shadow-sm"
+                      : "bg-[#150c0e] text-stone-300 border-stone-800 hover:bg-stone-800"
                   }`}
                 >
                   {m} min
@@ -282,7 +279,7 @@ export default function ConfiguracionManager() {
             </div>
 
             <p className="text-[11px] text-stone-400 mt-3 flex items-start gap-1.5 leading-relaxed">
-              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <ShieldAlert className="w-4 h-4 text-[#ce7281] shrink-0 mt-0.5" />
               <span>
                 <strong>Medida antifraude:</strong> El límite de 15 minutos garantiza que el cliente no pueda guardar capturas de pantalla de un cupón y reutilizarlo en visitas posteriores. Si transcurre el tiempo sin validarse, los puntos son reintegrados automáticamente al socio.
               </span>
@@ -291,11 +288,11 @@ export default function ConfiguracionManager() {
         </div>
 
         {/* Card 3: Puntos de Recompensa por Encuesta */}
-        <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 shadow-md space-y-4">
+        <div className="bg-[#0d0708] border border-[#5c131d]/35 rounded-3xl p-6 shadow-xl space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center font-bold">
+                <Sparkles className="w-5 h-5 text-[#d4aa58]" />
               </div>
               <div>
                 <h2 className="text-base font-bold text-white">
@@ -306,7 +303,7 @@ export default function ConfiguracionManager() {
                 </p>
               </div>
             </div>
-            <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
+            <span className="font-mono text-xs font-bold text-[#d4aa58] bg-[#5c131d]/25 px-3 py-1 rounded-xl border border-[#5c131d]/40">
               +{puntosPorEncuesta} pts
             </span>
           </div>
@@ -320,7 +317,7 @@ export default function ConfiguracionManager() {
               min={0}
               value={puntosPorEncuesta}
               onChange={(e) => setPuntosPorEncuesta(Math.max(0, parseInt(e.target.value) || 0))}
-              className="max-w-sm w-full bg-stone-950 border border-stone-700 rounded-2xl px-4 py-3 font-mono font-bold text-lg text-emerald-300 focus:outline-none focus:border-amber-500"
+              className="max-w-sm w-full bg-[#050304] border border-stone-800 rounded-2xl px-4 py-3 font-mono font-bold text-lg text-[#d4aa58] focus:outline-none focus:border-[#5c131d]"
             />
 
             <div className="flex flex-wrap gap-2 mt-2.5">
@@ -331,8 +328,8 @@ export default function ConfiguracionManager() {
                   onClick={() => setPuntosPorEncuesta(p)}
                   className={`px-3 py-1 rounded-xl font-mono text-xs font-semibold transition border ${
                     puntosPorEncuesta === p
-                      ? "bg-emerald-600 text-white border-emerald-500 shadow-sm"
-                      : "bg-stone-800 text-stone-300 border-stone-700 hover:bg-stone-700"
+                      ? "bg-[#5c131d] text-white border-[#7a1a27] shadow-sm"
+                      : "bg-[#150c0e] text-stone-300 border-stone-800 hover:bg-stone-800"
                   }`}
                 >
                   {p === 0 ? "Sin bonificación (0)" : `+${p} pts`}
@@ -347,7 +344,7 @@ export default function ConfiguracionManager() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full sm:w-auto px-8 py-3.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-stone-950 font-bold rounded-2xl text-sm shadow-xl transition flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3.5 bg-[#5c131d] hover:bg-[#7a1a27] disabled:opacity-50 text-white font-bold rounded-2xl text-sm shadow-xl transition flex items-center justify-center gap-2"
           >
             {saving ? (
               <Loader2 className="w-5 h-5 animate-spin" />

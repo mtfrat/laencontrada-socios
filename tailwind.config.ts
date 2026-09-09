@@ -9,18 +9,35 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        encontrada: {
-          50: '#fbf7f0',
-          100: '#f5ecd8',
-          200: '#ebdab1',
-          300: '#dfc282',
-          400: '#d4aa58',
-          500: '#c59138', // Dorado/Cálido rústico
-          600: '#ab742c',
-          700: '#895626',
-          800: '#714624',
-          900: '#5e3a21',
-          950: '#351e10',
+        wine: {
+          50: "#fdf4f5",
+          100: "#fbe8ea",
+          200: "#f7d4d8",
+          300: "#efb3bb",
+          400: "#e18693",
+          500: "#cf5c6d",
+          600: "#b53d50",
+          700: "#8f2233",
+          800: "#5c131d", // Color oficial principal
+          900: "#3d0b12",
+          950: "#220509",
+        },
+        bistro: {
+          canvas: "#010101",
+          card: "#0d0708",
+          elevated: "#150c0e",
+          inset: "#050304",
+          border: "rgba(92, 19, 29, 0.35)",
+        },
+        champagne: {
+          light: "#fdfaf7",
+          warm: "#f5ede6",
+          muted: "#a1908d",
+          faint: "#635553",
+        },
+        gold: {
+          points: "#d4aa58",
+          glow: "rgba(212, 170, 88, 0.2)",
         },
       },
     },

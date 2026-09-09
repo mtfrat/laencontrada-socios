@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import {
@@ -57,14 +58,14 @@ export default function SocioCanjePage({
         setCanje(data.canje);
         setTimeLeft(data.canje.segundosRestantes);
 
-        // Generar imagen QR
+        // Generar imagen QR con tinte vino elegante
         if (data.canje.codigoQR && !qrDataUrl) {
           try {
             const url = await QRCode.toDataURL(data.canje.codigoQR, {
               width: 280,
               margin: 2,
               color: {
-                dark: "#1c1917", // stone-900
+                dark: "#5c131d",
                 light: "#ffffff",
               },
             });
@@ -156,22 +157,22 @@ export default function SocioCanjePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fbf7f0] flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-800 mb-2" />
-        <p className="text-xs text-stone-600">Cargando cupón de canje...</p>
+      <div className="min-h-screen bg-[#010101] text-stone-100 flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-[#ce7281] mb-2" />
+        <p className="text-xs text-stone-400">Cargando cupón Wine Bistro...</p>
       </div>
     );
   }
 
   if (errorMessage || !canje) {
     return (
-      <div className="min-h-screen bg-[#fbf7f0] flex flex-col items-center justify-center p-4 text-center">
-        <AlertCircle className="w-12 h-12 text-red-600 mb-2" />
-        <h2 className="text-base font-bold text-stone-900">No se pudo cargar el cupón</h2>
-        <p className="text-xs text-stone-500 max-w-xs mt-1">{errorMessage}</p>
+      <div className="min-h-screen bg-[#010101] text-stone-100 flex flex-col items-center justify-center p-4 text-center">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-2" />
+        <h2 className="text-base font-bold text-white">No se pudo cargar el cupón</h2>
+        <p className="text-xs text-stone-400 max-w-xs mt-1">{errorMessage}</p>
         <Link
           href="/socio/premios"
-          className="mt-4 bg-amber-800 text-white text-xs font-bold px-4 py-2 rounded-xl"
+          className="mt-4 bg-[#5c131d] hover:bg-[#7a1a27] text-white text-xs font-bold px-4 py-2 rounded-xl transition"
         >
           Volver al catálogo
         </Link>
@@ -180,23 +181,31 @@ export default function SocioCanjePage({
   }
 
   return (
-    <div className="min-h-screen bg-[#fbf7f0] text-stone-900 pb-16">
+    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Header */}
-      <header className="bg-white border-b border-amber-200/60 sticky top-0 z-20">
+      <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/socio/premios"
-              className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 transition"
+              className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-800 transition"
               title="Volver a premios"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div>
-              <p className="text-xs font-semibold text-amber-950 font-serif leading-none">
-                La Encontrada
-              </p>
-              <h1 className="text-sm font-bold text-stone-900">Cupón de Recompensa</h1>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={28}
+                height={28}
+              />
+              <div>
+                <p className="text-[10px] uppercase font-mono tracking-widest text-[#ce7281] leading-none">
+                  Voucher
+                </p>
+                <h1 className="text-sm font-serif font-bold text-white">Cupón de Recompensa</h1>
+              </div>
             </div>
           </div>
         </div>
@@ -206,37 +215,39 @@ export default function SocioCanjePage({
       <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
         {/* ESTADO: COMPLETADO (Celebración) */}
         {canje.estado === "COMPLETADO" && (
-          <div className="bg-white rounded-3xl p-6 border border-emerald-300 shadow-xl text-center space-y-4 animate-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
-              <CheckCircle2 className="w-10 h-10" />
+          <div className="bg-[#0d0708] rounded-3xl p-6 border border-emerald-500/40 shadow-2xl text-center space-y-4 animate-in zoom-in-95 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
+
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-lg">
+              <CheckCircle2 className="w-9 h-9" />
             </div>
 
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                ¡Premio Entregado!
+            <div className="space-y-1 relative z-10">
+              <span className="text-[10px] uppercase font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ¡Premio Entregado en Mesa!
               </span>
-              <h2 className="text-xl font-serif font-bold text-stone-900 pt-2">
+              <h2 className="text-2xl font-serif font-bold text-white pt-2">
                 ¡Que lo disfrutes!
               </h2>
-              <p className="text-sm font-semibold text-amber-900">
+              <p className="text-sm font-semibold text-[#f5ede6]">
                 {canje.premio.titulo}
               </p>
-              <p className="text-xs text-stone-500 leading-relaxed pt-1">
-                El mozo validó tu cupón en mesa y se debitaron{" "}
-                <span className="font-bold text-stone-800 font-mono">
+              <p className="text-xs text-stone-400 leading-relaxed pt-1">
+                El mozo validó tu cupón y se debitaron{" "}
+                <span className="font-bold text-[#d4aa58] font-mono">
                   {canje.puntosGastados} puntos
                 </span>
                 .
               </p>
             </div>
 
-            <div className="bg-emerald-50/60 rounded-2xl p-3 border border-emerald-100 text-xs text-stone-600">
-              <p className="text-[11px] text-emerald-800 font-medium">Validación Salón</p>
-              <p className="font-mono text-[11px] mt-0.5">
-                Código: <span className="font-bold">{canje.codigoQR}</span>
+            <div className="bg-[#050304] rounded-2xl p-3 border border-stone-800 text-xs text-stone-300">
+              <p className="text-[11px] text-emerald-400 font-semibold">Validación Exitosa en Salón</p>
+              <p className="font-mono text-[11px] mt-0.5 text-stone-400">
+                Código: <span className="font-bold text-white">{canje.codigoQR}</span>
               </p>
               {canje.validadoPor && (
-                <p className="text-[10px] text-stone-400 mt-0.5">
+                <p className="text-[10px] text-stone-500 mt-0.5">
                   Atendido por: {canje.validadoPor}
                 </p>
               )}
@@ -244,7 +255,7 @@ export default function SocioCanjePage({
 
             <Link
               href="/socio/dashboard"
-              className="w-full block py-3 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl shadow transition"
+              className="w-full block py-3.5 bg-[#5c131d] hover:bg-[#7a1a27] text-white text-xs font-bold rounded-2xl shadow transition"
             >
               Volver a mi panel de socio
             </Link>
@@ -253,16 +264,16 @@ export default function SocioCanjePage({
 
         {/* ESTADO: EXPIRADO */}
         {canje.estado === "EXPIRADO" && (
-          <div className="bg-white rounded-3xl p-6 border border-stone-300 shadow-md text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
+          <div className="bg-[#0d0708] rounded-3xl p-6 border border-stone-800 shadow-xl text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-stone-900 text-stone-400 border border-stone-800 flex items-center justify-center mx-auto">
               <Clock className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-base font-bold text-stone-800">Cupón Expirado</h2>
-              <p className="text-xs text-stone-500 leading-relaxed">
+              <h2 className="text-base font-serif font-bold text-white">Cupón Expirado</h2>
+              <p className="text-xs text-stone-400 leading-relaxed">
                 Transcurrieron los 15 minutos sin ser validado en mesa. Los{" "}
-                <span className="font-bold text-stone-700 font-mono">
+                <span className="font-bold text-[#d4aa58] font-mono">
                   {canje.puntosGastados} puntos
                 </span>{" "}
                 fueron reintegrados a tu saldo sin ningún descuento.
@@ -271,7 +282,7 @@ export default function SocioCanjePage({
 
             <Link
               href="/socio/premios"
-              className="w-full block py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition"
+              className="w-full block py-3 bg-stone-900 hover:bg-stone-800 text-stone-200 hover:text-white border border-stone-700 text-xs font-bold rounded-xl transition"
             >
               Volver al catálogo de premios
             </Link>
@@ -280,21 +291,21 @@ export default function SocioCanjePage({
 
         {/* ESTADO: CANCELADO */}
         {canje.estado === "CANCELADO" && (
-          <div className="bg-white rounded-3xl p-6 border border-stone-300 shadow-md text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
+          <div className="bg-[#0d0708] rounded-3xl p-6 border border-stone-800 shadow-xl text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-stone-900 text-stone-400 border border-stone-800 flex items-center justify-center mx-auto">
               <XCircle className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-base font-bold text-stone-800">Cupón Cancelado</h2>
-              <p className="text-xs text-stone-500">
+              <h2 className="text-base font-serif font-bold text-white">Cupón Cancelado</h2>
+              <p className="text-xs text-stone-400">
                 Cancelaste este cupón voluntariamente. Tus puntos están listos para ser utilizados.
               </p>
             </div>
 
             <Link
               href="/socio/premios"
-              className="w-full block py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition"
+              className="w-full block py-3 bg-stone-900 hover:bg-stone-800 text-stone-200 hover:text-white border border-stone-700 text-xs font-bold rounded-xl transition"
             >
               Volver al catálogo
             </Link>
@@ -303,31 +314,33 @@ export default function SocioCanjePage({
 
         {/* ESTADO: PENDIENTE (Voucher QR en Vivo) */}
         {canje.estado === "PENDIENTE" && (
-          <div className="bg-white rounded-3xl border border-amber-200/80 shadow-xl overflow-hidden">
+          <div className="bg-[#0d0708] rounded-3xl border border-[#5c131d]/50 shadow-2xl overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-36 h-36 bg-[#5c131d]/15 rounded-full blur-2xl pointer-events-none" />
+
             {/* Header del Ticket */}
-            <div className="bg-gradient-to-r from-amber-800 to-stone-900 text-white p-4 text-center">
-              <div className="flex items-center justify-center gap-1.5 text-amber-200 text-[10px] font-semibold uppercase tracking-wider mb-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Presentá este código a tu mozo</span>
+            <div className="bg-gradient-to-r from-[#5c131d] via-[#7a1a27] to-[#3a0b12] text-white p-5 text-center">
+              <div className="flex items-center justify-center gap-1.5 text-[#f5ede6] text-[10px] font-semibold uppercase tracking-wider mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#d4aa58]" />
+                <span>Presentá este código al mozo</span>
               </div>
-              <h2 className="text-base font-bold leading-tight">{canje.premio.titulo}</h2>
-              <p className="text-xs text-amber-200 font-mono mt-0.5">
+              <h2 className="text-lg font-serif font-bold leading-tight">{canje.premio.titulo}</h2>
+              <p className="text-xs text-[#d4aa58] font-mono font-bold mt-0.5">
                 {canje.puntosGastados.toLocaleString("es-AR")} puntos
               </p>
             </div>
 
             {/* Código QR + Temporizador */}
-            <div className="p-6 text-center space-y-4">
+            <div className="p-6 text-center space-y-4 relative z-10">
               {/* Temporizador */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-mono font-bold">
-                <Clock className="w-3.5 h-3.5 animate-pulse text-amber-700" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#5c131d]/20 text-[#f5ede6] border border-[#5c131d]/40 text-xs font-mono font-bold">
+                <Clock className="w-3.5 h-3.5 animate-pulse text-[#e18693]" />
                 <span>Vence en {formatMinutes(timeLeft)}</span>
               </div>
 
               {/* Imagen del Código QR */}
               <div className="flex justify-center my-2">
                 {qrDataUrl ? (
-                  <div className="p-3 bg-white border-2 border-dashed border-amber-300 rounded-2xl shadow-inner inline-block">
+                  <div className="p-3 bg-white rounded-2xl shadow-xl inline-block border-2 border-[#5c131d]/30">
                     <img
                       src={qrDataUrl}
                       alt={`QR ${canje.codigoQR}`}
@@ -335,7 +348,7 @@ export default function SocioCanjePage({
                     />
                   </div>
                 ) : (
-                  <div className="w-56 h-56 mx-auto bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400">
+                  <div className="w-56 h-56 mx-auto bg-[#050304] border border-stone-800 rounded-2xl flex items-center justify-center text-stone-400">
                     <Loader2 className="w-8 h-8 animate-spin" />
                   </div>
                 )}
@@ -343,30 +356,30 @@ export default function SocioCanjePage({
 
               {/* Código alfanumérico legible */}
               <div>
-                <p className="text-[11px] text-stone-400 uppercase font-medium">
+                <p className="text-[11px] text-stone-400 uppercase font-semibold tracking-wider">
                   Código de Validación
                 </p>
-                <p className="text-2xl font-mono font-extrabold tracking-widest text-stone-900 select-all">
+                <p className="text-3xl font-mono font-extrabold tracking-widest text-white select-all mt-0.5">
                   {canje.codigoQR}
                 </p>
-                <p className="text-[10px] text-stone-400 mt-1">
+                <p className="text-[10px] text-stone-500 mt-1">
                   El mozo puede escanear el QR o ingresar este código en su tablet
                 </p>
               </div>
 
               {/* Instrucción y Botón Cancelar */}
-              <div className="pt-3 border-t border-stone-100 flex flex-col gap-2">
-                <p className="text-[11px] text-stone-500 italic">
+              <div className="pt-4 border-t border-stone-800/80 flex flex-col gap-2">
+                <p className="text-[11px] text-stone-400 italic">
                   Esta pantalla se actualizará automáticamente cuando tu mozo valide el cupón.
                 </p>
                 <button
                   type="button"
                   disabled={cancelando}
                   onClick={handleCancelar}
-                  className="text-stone-400 hover:text-red-600 text-xs font-medium py-2 transition flex items-center justify-center gap-1"
+                  className="text-stone-400 hover:text-red-400 text-xs font-medium py-2 transition flex items-center justify-center gap-1.5"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>{cancelando ? "Cancelando..." : "Cancelar este canje y liberar puntos"}</span>
+                  <span>{cancelando ? "Cancelando..." : "Cancelar este canje y recuperar puntos"}</span>
                 </button>
               </div>
             </div>

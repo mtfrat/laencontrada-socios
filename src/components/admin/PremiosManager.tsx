@@ -207,37 +207,37 @@ export default function PremiosManager() {
 
       {/* KPI Cards & Header Action */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-stone-900 rounded-2xl p-5 border border-stone-800 flex items-center justify-between">
+        <div className="bg-[#0d0708] rounded-2xl p-5 border border-[#5c131d]/35 flex items-center justify-between shadow-lg">
           <div>
             <p className="text-xs font-medium text-stone-400">Premios Activos</p>
             <p className="text-3xl font-extrabold text-white font-mono mt-1">{totalActivos}</p>
-            <p className="text-[11px] text-amber-400 mt-1">Disponibles para canje</p>
+            <p className="text-[11px] text-[#ce7281] mt-1">Disponibles para canje</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center">
             <Gift className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-stone-900 rounded-2xl p-5 border border-stone-800 flex items-center justify-between">
+        <div className="bg-[#0d0708] rounded-2xl p-5 border border-stone-800/80 flex items-center justify-between shadow-lg">
           <div>
             <p className="text-xs font-medium text-stone-400">Total en Catálogo</p>
-            <p className="text-3xl font-extrabold text-stone-100 font-mono mt-1">{premios.length}</p>
-            <p className="text-[11px] text-stone-400 mt-1">Incluye pausados</p>
+            <p className="text-3xl font-extrabold text-white font-mono mt-1">{premios.length}</p>
+            <p className="text-[11px] text-stone-500 mt-1">Incluye pausados</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-stone-800 text-stone-300 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#150c0e] text-stone-300 border border-stone-800 flex items-center justify-center">
             <Layers className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-stone-900 rounded-2xl p-5 border border-stone-800 flex items-center justify-between">
+        <div className="bg-[#0d0708] rounded-2xl p-5 border border-[#5c131d]/35 flex items-center justify-between shadow-lg">
           <div>
             <p className="text-xs font-medium text-stone-400">Canjes Realizados</p>
-            <p className="text-3xl font-extrabold text-emerald-400 font-mono mt-1">
+            <p className="text-3xl font-extrabold text-[#d4aa58] font-mono mt-1">
               {totalCanjesHistoricos}
             </p>
-            <p className="text-[11px] text-emerald-500/80 mt-1">Validados por mozos</p>
+            <p className="text-[11px] text-[#ce7281] mt-1">Validados en salón</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#5c131d]/20 text-[#d4aa58] border border-[#5c131d]/30 flex items-center justify-center">
             <Sparkles className="w-6 h-6" />
           </div>
         </div>
@@ -247,7 +247,7 @@ export default function PremiosManager() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Tag className="w-5 h-5 text-amber-400" />
+            <Tag className="w-5 h-5 text-[#ce7281]" />
             Catálogo de Recompensas
           </h2>
           <p className="text-xs text-stone-400">
@@ -257,7 +257,7 @@ export default function PremiosManager() {
 
         <button
           onClick={openCreateModal}
-          className="bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-sm shrink-0 self-start sm:self-auto"
+          className="bg-[#5c131d] hover:bg-[#7a1a27] text-white font-bold px-4 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm shrink-0 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo Premio</span>
@@ -267,15 +267,15 @@ export default function PremiosManager() {
       {/* Grid of Prizes */}
       {loading ? (
         <div className="py-16 text-center text-stone-400 space-y-2">
-          <Loader2 className="w-8 h-8 mx-auto animate-spin text-amber-500" />
+          <Loader2 className="w-8 h-8 mx-auto animate-spin text-[#ce7281]" />
           <p className="text-sm">Cargando catálogo de recompensas...</p>
         </div>
       ) : premios.length === 0 ? (
-        <div className="bg-stone-900 border border-dashed border-stone-800 rounded-3xl p-12 text-center text-stone-400">
+        <div className="bg-[#0d0708] border border-dashed border-stone-800 rounded-3xl p-12 text-center text-stone-400 shadow-lg">
           <Gift className="w-12 h-12 mx-auto mb-3 text-stone-600" />
           <p className="font-semibold text-white">No hay premios configurados</p>
           <p className="text-xs text-stone-500 mt-1">
-            Haz clic en "Nuevo Premio" para agregar la primera recompensa a la carta.
+            Haz clic en &quot;Nuevo Premio&quot; para agregar la primera recompensa a la carta.
           </p>
         </div>
       ) : (
@@ -283,23 +283,23 @@ export default function PremiosManager() {
           {premios.map((p) => (
             <div
               key={p.id}
-              className={`bg-stone-900 rounded-2xl p-5 border transition flex flex-col justify-between ${
+              className={`bg-[#0d0708] rounded-2xl p-5 border transition flex flex-col justify-between shadow-lg ${
                 p.activo
-                  ? "border-stone-800 hover:border-amber-500/40"
-                  : "border-stone-800/50 opacity-60 bg-stone-950"
+                  ? "border-[#5c131d]/35 hover:border-[#5c131d]"
+                  : "border-stone-800/50 opacity-60 bg-[#070405]"
               }`}
             >
               <div>
                 {/* Header card: points badge + status badge */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-mono font-bold text-sm border border-amber-500/30">
+                    <span className="px-3 py-1 rounded-xl bg-[#5c131d]/25 text-[#d4aa58] font-mono font-bold text-sm border border-[#5c131d]/40">
                       {p.puntosRequeridos.toLocaleString("es-AR")} pts
                     </span>
                     <span
                       className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                         p.activo
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                           : "bg-stone-800 text-stone-400"
                       }`}
                     >
@@ -321,14 +321,14 @@ export default function PremiosManager() {
                     </button>
                     <button
                       onClick={() => openEditModal(p)}
-                      className="p-1.5 rounded-lg text-stone-400 hover:text-amber-400 hover:bg-stone-800 transition"
+                      className="p-1.5 rounded-lg text-stone-400 hover:text-[#ce7281] hover:bg-stone-900 transition"
                       title="Editar premio"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(p)}
-                      className="p-1.5 rounded-lg text-stone-400 hover:text-red-400 hover:bg-stone-800 transition"
+                      className="p-1.5 rounded-lg text-stone-400 hover:text-red-400 hover:bg-stone-900 transition"
                       title="Eliminar premio"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -364,11 +364,11 @@ export default function PremiosManager() {
 
       {/* Modal Alta / Edición */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-stone-900 border border-stone-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0d0708] border border-[#5c131d]/50 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-stone-800/80 pb-3">
               <div className="flex items-center gap-2">
-                <Gift className="w-5 h-5 text-amber-400" />
+                <Gift className="w-5 h-5 text-[#ce7281]" />
                 <h3 className="text-base font-bold text-white">
                   {editingId ? "Editar Premio" : "Nuevo Premio"}
                 </h3>
@@ -392,7 +392,7 @@ export default function PremiosManager() {
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
                   placeholder="Ej: Postre de la Casa a elección"
-                  className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-[#5c131d]"
                 />
               </div>
 
@@ -405,7 +405,7 @@ export default function PremiosManager() {
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
                   placeholder="Ej: Incluye flan casero, panqueque con dulce de leche o bocha de helado."
-                  className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-[#5c131d]"
                 />
               </div>
 
@@ -420,7 +420,7 @@ export default function PremiosManager() {
                     min={1}
                     value={puntosRequeridos}
                     onChange={(e) => setPuntosRequeridos(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 font-mono font-bold focus:outline-none focus:border-amber-500"
+                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 font-mono font-bold focus:outline-none focus:border-[#5c131d]"
                   />
                 </div>
 
@@ -432,7 +432,7 @@ export default function PremiosManager() {
                     type="number"
                     value={stock}
                     onChange={(e) => setStock(parseInt(e.target.value) || 0)}
-                    className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 font-mono focus:outline-none focus:border-amber-500"
+                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 font-mono focus:outline-none focus:border-[#5c131d]"
                   />
                 </div>
               </div>
@@ -446,7 +446,7 @@ export default function PremiosManager() {
                   value={imagenUrl}
                   onChange={(e) => setImagenUrl(e.target.value)}
                   placeholder="https://ejemplo.com/foto-premio.jpg"
-                  className="w-full bg-stone-950 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-[#5c131d]"
                 />
               </div>
 
@@ -456,14 +456,14 @@ export default function PremiosManager() {
                   id="activoCheck"
                   checked={activo}
                   onChange={(e) => setActivo(e.target.checked)}
-                  className="rounded bg-stone-950 border-stone-700 text-amber-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                  className="rounded bg-[#050304] border-stone-800 text-[#5c131d] focus:ring-0 w-4 h-4 cursor-pointer"
                 />
                 <label htmlFor="activoCheck" className="text-xs text-stone-300 cursor-pointer font-medium">
                   Premio visible y activo para canje inmediato
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800/80">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
@@ -474,7 +474,7 @@ export default function PremiosManager() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-bold px-4 py-2 rounded-xl transition flex items-center gap-2 text-xs"
+                  className="bg-[#5c131d] hover:bg-[#7a1a27] disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl transition flex items-center gap-2 text-xs shadow-lg"
                 >
                   {saving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

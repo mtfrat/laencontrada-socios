@@ -99,7 +99,7 @@ export default function EncuestasManager() {
       if (data.success) {
         setPreguntas((prev) => [...prev, data.pregunta]);
         setNuevoTexto("");
-        setToastMessage("�Pregunta agregada a la encuesta de satisfacci�n!");
+        setToastMessage("¡Pregunta agregada a la encuesta de satisfacción!");
         setTimeout(() => setToastMessage(null), 3000);
       } else {
         setErrorMessage(data.error || "No se pudo agregar la pregunta.");
@@ -157,7 +157,7 @@ export default function EncuestasManager() {
   };
 
   const handleDeletePregunta = async (id: string) => {
-    if (!confirm("�Seguro que deseas eliminar o desactivar esta pregunta?")) return;
+    if (!confirm("¿Seguro que deseas eliminar o desactivar esta pregunta?")) return;
 
     try {
       const res = await fetch(`/api/admin/encuestas/${id}`, { method: "DELETE" });
@@ -195,11 +195,11 @@ export default function EncuestasManager() {
         setPuntosPorEncuesta(data.config.puntosPorEncuesta);
         setEncuestaActiva(data.config.encuestaActiva);
         setEncuestaUnaVezPorSocio(data.config.encuestaUnaVezPorSocio);
-        setToastMessage("�Configuraci�n de encuestas guardada exitosamente!");
+        setToastMessage("¡Configuración de encuestas guardada exitosamente!");
         setTimeout(() => setToastMessage(null), 3000);
       }
     } catch {
-      setErrorMessage("Error al guardar la configuraci�n.");
+      setErrorMessage("Error al guardar la configuración.");
     } finally {
       setSavingConfig(false);
     }
@@ -208,51 +208,51 @@ export default function EncuestasManager() {
   return (
     <div className="space-y-6">
       {toastMessage && (
-        <div className="p-4 bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-sm rounded-2xl flex items-center gap-3 shadow-xl">
+        <div className="p-4 bg-[#0d0708] border border-[#5c131d]/60 text-[#f5ede6] text-sm rounded-2xl flex items-center gap-3 shadow-2xl shadow-black/80">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-4 bg-red-950/80 border border-red-800 text-red-200 text-sm rounded-2xl flex items-center gap-3 shadow-xl">
+        <div className="p-4 bg-[#3a0b12]/60 border border-red-800 text-red-200 text-sm rounded-2xl flex items-center gap-3 shadow-xl">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       {/* PANEL DE CONTROL: MOSTRAR/OCULTAR, PUNTOS Y FRECUENCIA */}
-      <div className="bg-stone-900 rounded-3xl p-6 border border-stone-800 space-y-6 shadow-xl">
-        <div className="flex items-center justify-between pb-4 border-b border-stone-800">
+      <div className="bg-[#0d0708] rounded-3xl p-6 border border-[#5c131d]/25 space-y-6 shadow-xl">
+        <div className="flex items-center justify-between pb-4 border-b border-[#5c131d]/20">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#5c131d]/15 text-[#d4aa58] border border-[#5c131d]/30 flex items-center justify-center">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Reglas y Visibilidad de Encuestas</h2>
-              <p className="text-xs text-stone-400">Control maestro de puntos, frecuencia y visualizaci�n para socios.</p>
+              <h2 className="text-lg font-bold text-white font-serif">Reglas y Visibilidad de Encuestas</h2>
+              <p className="text-xs text-[#f5ede6]/50">Control maestro de puntos, frecuencia y visualización para socios.</p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* 1. Mostrar u Ocultar Todas las Encuestas */}
-          <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 flex flex-col justify-between">
+          <div className="bg-[#050304] p-4 rounded-2xl border border-[#5c131d]/20 flex flex-col justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#f5ede6]/50 block mb-1">
                 Visibilidad General
               </span>
               <p className="text-sm font-bold text-white mb-2">
                 {encuestaActiva ? "Encuestas Visibles" : "Encuestas Ocultas"}
               </p>
-              <p className="text-[11px] text-stone-500 leading-relaxed">
+              <p className="text-[11px] text-[#f5ede6]/50 leading-relaxed">
                 {encuestaActiva
                   ? "Los socios ven las encuestas en su cuenta para calificar y ganar puntos."
-                  : "M�dulo pausado: ning�n socio ver� ni podr� responder encuestas."}
+                  : "Módulo pausado: ningún socio verá ni podrá responder encuestas."}
               </p>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-stone-800/80">
+            <div className="mt-4 pt-3 border-t border-[#5c131d]/20">
               <button
                 type="button"
                 onClick={() => {
@@ -264,16 +264,16 @@ export default function EncuestasManager() {
                 className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
                   encuestaActiva
                     ? "bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/60"
-                    : "bg-stone-800 border border-stone-700 text-stone-400 hover:text-white"
+                    : "bg-[#150c0e] border border-[#5c131d]/25 text-[#f5ede6]/60 hover:text-white"
                 }`}
               >
                 {encuestaActiva ? (
                   <>
-                    <Eye className="w-4 h-4" /> Mostrando en App
+                    <Eye className="w-4 h-4 text-emerald-400" /> Mostrando en App
                   </>
                 ) : (
                   <>
-                    <EyeOff className="w-4 h-4" /> Oculta en App
+                    <EyeOff className="w-4 h-4 text-[#f5ede6]/40" /> Oculta en App
                   </>
                 )}
               </button>
@@ -281,33 +281,33 @@ export default function EncuestasManager() {
           </div>
 
           {/* 2. Puntos Ganados por Completar */}
-          <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 flex flex-col justify-between">
+          <div className="bg-[#050304] p-4 rounded-2xl border border-[#5c131d]/20 flex flex-col justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#f5ede6]/50 block mb-1">
                 Puntos de Recompensa
               </span>
               <p className="text-sm font-bold text-white mb-2">Bono por Encuesta</p>
-              <p className="text-[11px] text-stone-500 leading-relaxed">
-                Puntos exactos que se acreditar�n autom�ticamente al socio al enviar sus respuestas.
+              <p className="text-[11px] text-[#f5ede6]/50 leading-relaxed">
+                Puntos exactos que se acreditarán automáticamente al socio al enviar sus respuestas.
               </p>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-stone-800/80 flex items-center gap-2">
-              <div className="flex-1 flex items-center bg-stone-900 border border-stone-700 px-3 py-1.5 rounded-xl">
+            <div className="mt-4 pt-3 border-t border-[#5c131d]/20 flex items-center gap-2">
+              <div className="flex-1 flex items-center bg-[#0d0708] border border-[#5c131d]/30 px-3 py-1.5 rounded-xl">
                 <input
                   type="number"
                   min="0"
                   value={puntosPorEncuesta}
                   onChange={(e) => setPuntosPorEncuesta(Number(e.target.value))}
-                  className="w-full bg-transparent text-amber-400 font-mono font-bold text-lg focus:outline-none"
+                  className="w-full bg-transparent text-[#d4aa58] font-mono font-bold text-lg focus:outline-none"
                 />
-                <span className="text-[10px] text-stone-400 font-semibold uppercase">pts</span>
+                <span className="text-[10px] text-[#f5ede6]/50 font-semibold uppercase">pts</span>
               </div>
               <button
                 type="button"
                 onClick={() => handleSaveConfig({ puntos: puntosPorEncuesta })}
                 disabled={savingConfig}
-                className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs rounded-xl shadow transition shrink-0"
+                className="px-3.5 py-2 bg-[#5c131d] hover:bg-[#731925] text-white font-bold text-xs rounded-xl shadow-md shadow-[#5c131d]/30 transition shrink-0"
               >
                 Guardar
               </button>
@@ -315,22 +315,22 @@ export default function EncuestasManager() {
           </div>
 
           {/* 3. Frecuencia Permitida (1 vez por socio vs 1 vez por visita) */}
-          <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 flex flex-col justify-between">
+          <div className="bg-[#050304] p-4 rounded-2xl border border-[#5c131d]/20 flex flex-col justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#f5ede6]/50 block mb-1">
                 Frecuencia de Respuesta
               </span>
               <p className="text-sm font-bold text-white mb-2">
                 {encuestaUnaVezPorSocio ? "Solo 1 vez por socio" : "1 vez por cada visita"}
               </p>
-              <p className="text-[11px] text-stone-500 leading-relaxed">
+              <p className="text-[11px] text-[#f5ede6]/50 leading-relaxed">
                 {encuestaUnaVezPorSocio
                   ? "Cada cliente solo puede calificar 1 sola vez en su vida como socio."
                   : "El cliente puede calificar cada una de sus visitas a comer y sumar puntos."}
               </p>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-stone-800/80">
+            <div className="mt-4 pt-3 border-t border-[#5c131d]/20">
               <button
                 type="button"
                 onClick={() => {
@@ -339,7 +339,7 @@ export default function EncuestasManager() {
                   handleSaveConfig({ unaVez: next });
                 }}
                 disabled={savingConfig}
-                className="w-full py-2 px-3 bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold rounded-xl border border-stone-700 transition flex items-center justify-center gap-1.5"
+                className="w-full py-2 px-3 bg-[#150c0e] hover:bg-[#1f1013] text-[#f5ede6]/80 text-xs font-semibold rounded-xl border border-[#5c131d]/25 transition flex items-center justify-center gap-1.5"
               >
                 Cambiar a: {encuestaUnaVezPorSocio ? "Por cada visita" : "1 sola vez por socio"}
               </button>
@@ -349,31 +349,31 @@ export default function EncuestasManager() {
       </div>
 
       {/* AGREGAR NUEVA PREGUNTA */}
-      <div className="bg-stone-900 rounded-3xl p-6 border border-stone-800 shadow-xl">
-        <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-          <Plus className="w-4 h-4 text-amber-400" />
+      <div className="bg-[#0d0708] rounded-3xl p-6 border border-[#5c131d]/25 shadow-xl">
+        <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2 font-serif">
+          <Plus className="w-4 h-4 text-[#d4aa58]" />
           Agregar Pregunta a la Encuesta
         </h3>
-        <p className="text-xs text-stone-400 mb-4">
-          Crea nuevas preguntas editables que aparecer�n inmediatamente en el celular de los socios.
+        <p className="text-xs text-[#f5ede6]/50 mb-4">
+          Crea nuevas preguntas editables que aparecerán inmediatamente en el celular de los socios.
         </p>
 
         <form onSubmit={handleCreatePregunta} className="space-y-3">
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
-              placeholder="Escribe la pregunta (ej: �Qu� te pareci� la temperatura y punto de la carne?)"
+              placeholder="Escribe la pregunta (ej: ¿Qué te pareció la temperatura y punto de la carne?)"
               value={nuevoTexto}
               onChange={(e) => setNuevoTexto(e.target.value)}
-              className="flex-1 px-4 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="flex-1 px-4 py-2.5 bg-[#050304] border border-[#5c131d]/30 rounded-xl text-sm text-white placeholder:text-[#f5ede6]/30 focus:outline-none focus:border-[#5c131d] focus:ring-1 focus:ring-[#5c131d]/40"
             />
             <select
               value={nuevaCategoria}
               onChange={(e) => setNuevaCategoria(e.target.value)}
-              className="px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="px-3.5 py-2.5 bg-[#050304] border border-[#5c131d]/30 rounded-xl text-xs text-[#f5ede6]/80 focus:outline-none focus:border-[#5c131d]"
             >
               <option value="COMIDA">Comida / Platos</option>
-              <option value="ATENCION">Atenci�n / Mozos</option>
+              <option value="ATENCION">Atención / Mozos</option>
               <option value="AMBIENTE">Ambiente / Clima</option>
               <option value="BEBIDAS">Bebidas / Vinos</option>
               <option value="GENERAL">General</option>
@@ -381,7 +381,7 @@ export default function EncuestasManager() {
             <button
               type="submit"
               disabled={creando || !nuevoTexto.trim()}
-              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-bold text-xs rounded-xl shadow transition shrink-0"
+              className="px-5 py-2.5 bg-[#5c131d] hover:bg-[#731925] disabled:bg-[#150c0e] disabled:text-[#f5ede6]/30 text-white font-bold text-xs rounded-xl shadow-lg shadow-[#5c131d]/30 transition shrink-0"
             >
               {creando ? "Agregando..." : "Crear Pregunta"}
             </button>
@@ -390,22 +390,22 @@ export default function EncuestasManager() {
       </div>
 
       {/* LISTADO DE PREGUNTAS EDITABLES (MOSTRAR / OCULTAR CADA UNA) */}
-      <div className="bg-stone-900 rounded-3xl p-6 border border-stone-800 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between pb-3 border-b border-stone-800">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-stone-300 flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-amber-400" />
+      <div className="bg-[#0d0708] rounded-3xl p-6 border border-[#5c131d]/25 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between pb-3 border-b border-[#5c131d]/20">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[#f5ede6]/70 flex items-center gap-2">
+            <HelpCircle className="w-4 h-4 text-[#d4aa58]" />
             Preguntas en la Encuesta ({preguntas.length})
           </h3>
-          <span className="text-xs text-stone-400">Pausa o activa cada una con 1 click</span>
+          <span className="text-xs text-[#f5ede6]/50">Pausa o activa cada una con 1 click</span>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-stone-400 flex flex-col items-center gap-2">
-            <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+          <div className="text-center py-12 text-[#f5ede6]/50 flex flex-col items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-[#5c131d]" />
             <span className="text-xs">Cargando preguntas...</span>
           </div>
         ) : preguntas.length === 0 ? (
-          <p className="text-center py-8 text-stone-500 text-xs">
+          <p className="text-center py-8 text-[#f5ede6]/40 text-xs">
             No hay preguntas registradas. Crea una arriba para que los socios puedan calificar su experiencia.
           </p>
         ) : (
@@ -415,8 +415,8 @@ export default function EncuestasManager() {
                 key={p.id}
                 className={`p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                   p.activa
-                    ? "bg-stone-950 border-stone-800"
-                    : "bg-stone-950/40 border-stone-900 opacity-50"
+                    ? "bg-[#050304] border-[#5c131d]/25"
+                    : "bg-[#050304]/40 border-[#5c131d]/15 opacity-50"
                 }`}
               >
                 {editingId === p.id ? (
@@ -425,29 +425,29 @@ export default function EncuestasManager() {
                       type="text"
                       value={editTexto}
                       onChange={(e) => setEditTexto(e.target.value)}
-                      className="flex-1 px-3 py-1.5 bg-stone-900 border border-stone-700 rounded-xl text-xs text-white"
+                      className="flex-1 px-3 py-1.5 bg-[#0d0708] border border-[#5c131d]/30 rounded-xl text-xs text-white"
                     />
                     <select
                       value={editCategoria}
                       onChange={(e) => setEditCategoria(e.target.value)}
-                      className="px-3 py-1.5 bg-stone-900 border border-stone-700 rounded-xl text-xs text-stone-300"
+                      className="px-3 py-1.5 bg-[#0d0708] border border-[#5c131d]/30 rounded-xl text-xs text-[#f5ede6]/80"
                     >
                       <option value="COMIDA">Comida</option>
-                      <option value="ATENCION">Atenci�n</option>
+                      <option value="ATENCION">Atención</option>
                       <option value="AMBIENTE">Ambiente</option>
                       <option value="BEBIDAS">Bebidas</option>
                       <option value="GENERAL">General</option>
                     </select>
                     <button
                       onClick={() => handleSaveEdit(p.id)}
-                      className="p-2 rounded-lg bg-emerald-600 text-white"
+                      className="p-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500"
                       title="Guardar"
                     >
                       <Save className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
-                      className="p-2 rounded-lg bg-stone-800 text-stone-400"
+                      className="p-2 rounded-lg bg-[#150c0e] text-[#f5ede6]/50 hover:text-white"
                       title="Cancelar"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -455,24 +455,24 @@ export default function EncuestasManager() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-stone-800 text-stone-400 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                    <span className="w-6 h-6 rounded-full bg-[#150c0e] text-[#d4aa58] border border-[#5c131d]/20 text-xs font-mono font-bold flex items-center justify-center shrink-0">
                       {idx + 1}
                     </span>
                     <div>
                       <p className="text-sm font-semibold text-white">{p.texto}</p>
-                      <span className="text-[10px] font-mono text-amber-400/80 uppercase">
-                        Categor�a: {p.categoria || "GENERAL"}
+                      <span className="text-[10px] font-mono text-[#d4aa58]/80 uppercase">
+                        Categoría: {p.categoria || "GENERAL"}
                       </span>
                     </div>
                   </div>
                 )}
 
-                {/* Botones de acci�n r�pida: Mostrar/Ocultar, Editar, Eliminar */}
+                {/* Botones de acción rápida: Mostrar/Ocultar, Editar, Eliminar */}
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleToggleActiva(p)}
-                    className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-white transition"
+                    className="flex items-center gap-1.5 text-xs text-[#f5ede6]/50 hover:text-white transition"
                     title={p.activa ? "Ocultar pregunta de la encuesta" : "Mostrar pregunta en la encuesta"}
                   >
                     {p.activa ? (
@@ -482,8 +482,8 @@ export default function EncuestasManager() {
                       </>
                     ) : (
                       <>
-                        <ToggleLeft className="w-5 h-5 text-stone-600" />
-                        <span className="text-[11px] text-stone-500">Oculta</span>
+                        <ToggleLeft className="w-5 h-5 text-[#f5ede6]/30" />
+                        <span className="text-[11px] text-[#f5ede6]/40">Oculta</span>
                       </>
                     )}
                   </button>
@@ -491,7 +491,7 @@ export default function EncuestasManager() {
                   <button
                     type="button"
                     onClick={() => startEdit(p)}
-                    className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-400 hover:text-white border border-stone-800 transition"
+                    className="p-2 rounded-xl bg-[#150c0e] hover:bg-[#1f1013] text-[#f5ede6]/60 hover:text-white border border-[#5c131d]/25 transition"
                     title="Editar texto"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -500,7 +500,7 @@ export default function EncuestasManager() {
                   <button
                     type="button"
                     onClick={() => handleDeletePregunta(p.id)}
-                    className="p-2 rounded-xl bg-stone-900 hover:bg-red-950/60 text-stone-400 hover:text-red-400 border border-stone-800 transition"
+                    className="p-2 rounded-xl bg-[#150c0e] hover:bg-red-950/60 text-[#f5ede6]/60 hover:text-red-400 border border-[#5c131d]/25 transition"
                     title="Eliminar pregunta"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

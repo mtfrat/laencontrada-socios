@@ -23,13 +23,13 @@ export default function StaffLogoutButton() {
     <button
       onClick={handleLogout}
       disabled={loading}
-      className="inline-flex items-center gap-1.5 text-xs text-stone-300 hover:text-red-400 bg-stone-800 hover:bg-stone-700/80 border border-stone-700 px-3 py-1.5 rounded-xl transition shadow-sm font-medium"
+      className="inline-flex items-center gap-1.5 text-xs text-[#f5ede6]/70 hover:text-white bg-[#150c0e] hover:bg-[#3a0b12]/60 border border-[#5c131d]/30 px-3 py-1.5 rounded-xl transition shadow-sm font-medium"
       title="Cerrar turno / sesión"
     >
       {loading ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
       ) : (
-        <LogOut className="w-3.5 h-3.5" />
+        <LogOut className="w-3.5 h-3.5 text-[#5c131d]" />
       )}
       <span>Cerrar Turno</span>
     </button>
