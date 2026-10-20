@@ -161,7 +161,7 @@ async function main() {
 
   // Asignar número de socio a aquellos sin número
   let nextNum = maxNumSocio + 1;
-  for (const socio of sociosMap.values()) {
+  for (const socio of Array.from(sociosMap.values())) {
     if (!socio.numSocio) {
       socio.numSocio = `SOC-${nextNum}`;
       console.log(`  -> Asignando número autoincremental ${socio.numSocio} a ${socio.nombre} ${socio.apellido || ""} (DNI ${socio.dni})`);
@@ -171,7 +171,7 @@ async function main() {
 
   // Comprobar colisiones de número de socio dentro de los registros a importar
   const numSocioUsage = new Map<string, string>();
-  for (const socio of sociosMap.values()) {
+  for (const socio of Array.from(sociosMap.values())) {
     const existingDni = numSocioUsage.get(socio.numSocio!);
     if (existingDni && existingDni !== socio.dni) {
       // Reasignar si hubiera colisión insospechada
@@ -187,7 +187,7 @@ async function main() {
   let insertados = 0;
   let actualizados = 0;
 
-  for (const socio of sociosMap.values()) {
+  for (const socio of Array.from(sociosMap.values())) {
     // Comprobar si ya existe por DNI
     const existingByDni = await prisma.socio.findUnique({
       where: { dni: socio.dni },

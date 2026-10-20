@@ -74,11 +74,22 @@ async function run() {
     calificacionesGuardadas: socioAfter?.respuestasEncuesta[0]?.items.length,
   });
 
-  console.assert(socioAfter?.puntosActuales === socio.puntosActuales + 10);
-  console.assert(socioAfter?.puntosHistoricos === socio.puntosHistoricos + 10);
+  if (socioAfter?.puntosActuales !== socio.puntosActuales + 10) {
+    throw new Error(
+      `puntosActuales incorrecto: esperaba ${socio.puntosActuales + 10}, obtuvo ${socioAfter?.puntosActuales}`
+    );
+  }
+  if (socioAfter?.puntosHistoricos !== socio.puntosHistoricos + 10) {
+    throw new Error(
+      `puntosHistoricos incorrecto: esperaba ${socio.puntosHistoricos + 10}, obtuvo ${socioAfter?.puntosHistoricos}`
+    );
+  }
   console.log("✔ Test E2E de encuesta editable y bonificación de puntos superado con éxito!");
 }
 
 run()
-  .catch(console.error)
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

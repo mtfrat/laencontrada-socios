@@ -1,90 +1,83 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/guards";
+import { ApiError, errorResponse } from "@/lib/api-error";
 import { EstadoCanje, TipoTransaccion } from "@prisma/client";
+
+const includeCanje = {
+  socio: {
+    select: {
+      id: true,
+      nombre: true,
+      apellido: true,
+      dni: true,
+      puntosActuales: true,
+    },
+  },
+  premio: {
+    select: {
+      id: true,
+      titulo: true,
+      stock: true,
+    },
+  },
+};
 
 export async function POST(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireStaffSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const body = await request.json();
     const { codigo } = body;
 
     if (!codigo || typeof codigo !== "string" || !codigo.trim()) {
       return NextResponse.json(
-        { success: false, error: "Ingresa el código del cupón o escanea el código QR." },
+        {
+          success: false,
+          code: "CODIGO_REQUERIDO",
+          error: "Ingresa el código del cupón o escanea el código QR.",
+        },
         { status: 400 }
       );
     }
 
-    // Normalizar código: convertir a mayúsculas y limpiar espacios
     const rawClean = codigo.trim().toUpperCase();
-    // Si viene sin el prefijo CANJE-, agregar o buscar por endsWith
-    const normalizedCode = rawClean.startsWith("CANJE-") ? rawClean : `CANJE-${rawClean}`;
+    const normalizedCode = rawClean.startsWith("CANJE-")
+      ? rawClean
+      : `CANJE-${rawClean}`;
 
-    // Buscar el canje por código exacto o alternativo
-    let canje = await prisma.canjePremio.findUnique({
+    let encontrado = await prisma.canjePremio.findUnique({
       where: { codigoQR: normalizedCode },
-      include: {
-        socio: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            dni: true,
-            puntosActuales: true,
-          },
-        },
-        premio: {
-          select: {
-            id: true,
-            titulo: true,
-            stock: true,
-          },
-        },
-      },
+      include: includeCanje,
     });
 
-    if (!canje) {
-      // Intentar buscar directo por si el código no llevaba el prefijo
-      canje = await prisma.canjePremio.findUnique({
+    if (!encontrado) {
+      encontrado = await prisma.canjePremio.findUnique({
         where: { codigoQR: rawClean },
-        include: {
-          socio: {
-            select: {
-              id: true,
-              nombre: true,
-              apellido: true,
-              dni: true,
-              puntosActuales: true,
-            },
-          },
-          premio: {
-            select: {
-              id: true,
-              titulo: true,
-              stock: true,
-            },
-          },
-        },
+        include: includeCanje,
       });
     }
 
+    const canje = encontrado;
+
     if (!canje) {
       return NextResponse.json(
-        { success: false, error: `No se encontró ningún cupón con el código "${rawClean}".` },
+        {
+          success: false,
+          code: "NOT_FOUND",
+          error: `No se encontró ningún cupón con el código "${rawClean}".`,
+        },
         { status: 404 }
       );
     }
 
-    // Comprobaciones de estado
     if (canje.estado === EstadoCanje.COMPLETADO) {
       return NextResponse.json(
         {
           success: false,
+          code: "YA_COMPLETADO",
           error: "Este cupón ya fue canjeado y entregado con anterioridad.",
           yaCompletado: true,
           fechaCanje: canje.fechaCanje,
@@ -97,6 +90,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
+          code: "CANCELADO",
           error: "El socio ha cancelado este cupón voluntariamente.",
         },
         { status: 400 }
@@ -105,7 +99,6 @@ export async function POST(request: Request) {
 
     const now = new Date();
     if (canje.estado === EstadoCanje.EXPIRADO || now > canje.fechaExpiracion) {
-      // Asegurar que esté marcado como EXPIRADO en BD
       if (canje.estado !== EstadoCanje.EXPIRADO) {
         await prisma.canjePremio.update({
           where: { id: canje.id },
@@ -115,39 +108,21 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "El cupón ha expirado. Han transcurrido más de 15 minutos desde su emisión.",
+          code: "EXPIRADO",
+          error:
+            "El cupón ha expirado. Han transcurrido más de 15 minutos desde su emisión.",
         },
         { status: 400 }
       );
     }
 
-    // Comprobación de saldo del socio
-    if (canje.socio.puntosActuales < canje.puntosGastados) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `El socio no posee saldo suficiente (${canje.socio.puntosActuales} pts vs ${canje.puntosGastados} pts requeridos).`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Comprobación de stock
-    if (canje.premio.stock === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `El premio "${canje.premio.titulo}" no cuenta con stock disponible en este momento.`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Transacción atómica de validación
     const resultado = await prisma.$transaction(async (tx) => {
-      // 1. Marcar canje como COMPLETADO
-      const canjeActualizado = await tx.canjePremio.update({
-        where: { id: canje.id },
+      const reclamado = await tx.canjePremio.updateMany({
+        where: {
+          id: canje.id,
+          estado: EstadoCanje.PENDIENTE,
+          fechaExpiracion: { gt: now },
+        },
         data: {
           estado: EstadoCanje.COMPLETADO,
           validadoPorId: session.id,
@@ -155,29 +130,79 @@ export async function POST(request: Request) {
         },
       });
 
-      // 2. Debitar puntos del socio
-      const socioActualizado = await tx.socio.update({
-        where: { id: canje.socio.id },
+      if (reclamado.count === 0) {
+        const actual = await tx.canjePremio.findUnique({
+          where: { id: canje.id },
+        });
+        if (!actual) {
+          throw new ApiError(
+            404,
+            "NOT_FOUND",
+            `No se encontró ningún cupón con el código "${rawClean}".`
+          );
+        }
+        if (actual.estado === EstadoCanje.COMPLETADO) {
+          throw new ApiError(
+            400,
+            "YA_COMPLETADO",
+            "Este cupón ya fue canjeado y entregado con anterioridad.",
+            { yaCompletado: true, fechaCanje: actual.fechaCanje }
+          );
+        }
+        if (actual.estado === EstadoCanje.CANCELADO) {
+          throw new ApiError(
+            400,
+            "CANCELADO",
+            "El socio ha cancelado este cupón voluntariamente."
+          );
+        }
+        throw new ApiError(
+          400,
+          "EXPIRADO",
+          "El cupón ha expirado. Han transcurrido más de 15 minutos desde su emisión."
+        );
+      }
+
+      const debitado = await tx.socio.updateMany({
+        where: {
+          id: canje.socio.id,
+          puntosActuales: { gte: canje.puntosGastados },
+        },
         data: {
-          puntosActuales: {
-            decrement: canje.puntosGastados,
-          },
+          puntosActuales: { decrement: canje.puntosGastados },
         },
       });
 
-      // 3. Descontar stock del premio si no es ilimitado
-      if (canje.premio.stock > 0) {
-        await tx.premio.update({
-          where: { id: canje.premio.id },
-          data: {
-            stock: {
-              decrement: 1,
-            },
-          },
+      if (debitado.count === 0) {
+        const saldo = await tx.socio.findUnique({
+          where: { id: canje.socio.id },
         });
+        throw new ApiError(
+          400,
+          "SALDO_INSUFICIENTE",
+          `El socio no posee saldo suficiente (${
+            saldo?.puntosActuales ?? 0
+          } pts vs ${canje.puntosGastados} pts requeridos).`
+        );
       }
 
-      // 4. Registrar transacción en auditoría de puntos
+      if (canje.premio.stock !== -1) {
+        const stockOk = await tx.premio.updateMany({
+          where: { id: canje.premio.id, stock: { gt: 0 } },
+          data: {
+            stock: { decrement: 1 },
+          },
+        });
+
+        if (stockOk.count === 0) {
+          throw new ApiError(
+            400,
+            "SIN_STOCK",
+            `El premio "${canje.premio.titulo}" no cuenta con stock disponible en este momento.`
+          );
+        }
+      }
+
       await tx.transaccionPuntos.create({
         data: {
           socioId: canje.socio.id,
@@ -188,7 +213,11 @@ export async function POST(request: Request) {
         },
       });
 
-      return { canjeActualizado, nuevoSaldo: socioActualizado.puntosActuales };
+      const socioTrasDebito = await tx.socio.findUnique({
+        where: { id: canje.socio.id },
+      });
+
+      return { nuevoSaldo: socioTrasDebito?.puntosActuales ?? 0 };
     });
 
     return NextResponse.json({
@@ -209,9 +238,16 @@ export async function POST(request: Request) {
       message: "¡Cupón validado con éxito! Premio listo para entregar.",
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return errorResponse(error);
+    }
     console.error("Error en validación de canje POS:", error);
     return NextResponse.json(
-      { success: false, error: "Error de servidor al validar el cupón." },
+      {
+        success: false,
+        code: "INTERNAL_ERROR",
+        error: "Error de servidor al validar el cupón.",
+      },
       { status: 500 }
     );
   }

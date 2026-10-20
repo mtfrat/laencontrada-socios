@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import type { Html5Qrcode } from "html5-qrcode";
 import {
   QrCode,
   CheckCircle2,
@@ -38,7 +39,7 @@ export default function CanjeValidator() {
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const html5QrCodeRef = useRef<any>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
   const procesarValidacion = useCallback(async (codigoAValidar: string) => {
     if (!codigoAValidar || !codigoAValidar.trim()) {
@@ -135,7 +136,7 @@ export default function CanjeValidator() {
             }
           );
           setIniciandoCamara(false);
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error("Error inicializando Html5Qrcode:", err);
           setCameraError(
             "No se pudo acceder a la cámara. Asegúrate de conceder permisos al navegador o escribe el código manualmente."
@@ -144,7 +145,7 @@ export default function CanjeValidator() {
           setIniciandoCamara(false);
         }
       }, 150);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error importando html5-qrcode:", err);
       setCameraError("El escáner no es compatible con este navegador.");
       setCameraActiva(false);
@@ -160,7 +161,7 @@ export default function CanjeValidator() {
           if (html5QrCodeRef.current.isScanning) {
             html5QrCodeRef.current.stop().catch(() => {});
           }
-          html5QrCodeRef.current.clear().catch(() => {});
+          html5QrCodeRef.current.clear();
         } catch {
           // Silencioso
         }

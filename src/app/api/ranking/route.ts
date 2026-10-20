@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const session = await getSocioSession();
 
-    // Obtener Top 20 socios con mayor puntaje hist�rico
+    // Obtener Top 20 socios con mayor puntaje histórico
     const topSocios = await prisma.socio.findMany({
       where: { activo: true },
       select: {
@@ -36,7 +36,7 @@ export async function GET() {
       };
     });
 
-    // Calcular posici�n del socio actual si no est� en el top 20
+    // Calcular posición del socio actual si no está en el top 20
     let miPosicion = null;
     if (session) {
       const socioActual = await prisma.socio.findUnique({

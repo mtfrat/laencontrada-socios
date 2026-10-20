@@ -4,44 +4,27 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const envCheck = {
-    hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
-    hasSessionSecret: Boolean(process.env.SESSION_SECRET),
-    nodeEnv: process.env.NODE_ENV,
-  };
-
   if (!process.env.DATABASE_URL) {
+    console.error(
+      "[health] DATABASE_URL no está configurada en las variables de entorno."
+    );
     return NextResponse.json(
-      {
-        status: "ERROR",
-        motivo: "DATABASE_URL no está configurada en las Variables de Entorno de Vercel.",
-        solucion: "Ve a Vercel > Settings > Environment Variables, agrega DATABASE_URL y luego haz Redeploy.",
-        envCheck,
-      },
+      { status: "ERROR", code: "CONFIG_MISSING" },
       { status: 500 }
     );
   }
 
   try {
-    const totalSocios = await prisma.socio.count();
-    const config = await prisma.configuracionPuntos.findFirst();
-
+    await prisma.$queryRaw`SELECT 1`;
     return NextResponse.json({
       status: "OK",
-      mensaje: "Conexión con Supabase y servidor Next.js exitosa.",
-      totalSocios,
-      pesosPorPunto: config?.pesosPorPunto || 1000,
-      envCheck,
+      timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error) {
+    console.error("[health] Error de conexión con la base de datos:", error);
     return NextResponse.json(
-      {
-        status: "ERROR_CONEXION_BASE_DATOS",
-        mensaje: "Error al conectar con la base de datos Supabase.",
-        errorDetalle: error?.message || String(error),
-        envCheck,
-      },
-      { status: 500 }
+      { status: "ERROR", code: "DB_UNAVAILABLE" },
+      { status: 503 }
     );
   }
 }

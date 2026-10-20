@@ -70,11 +70,24 @@ async function run() {
     notas: visitaEnriquecida?.notas,
   });
 
-  console.assert(visitaEnriquecida?.platos.length === 3, "Debe tener 3 platos");
-  console.assert(visitaEnriquecida?.ticketAdjunto?.numeroTicketFiscal === "FAC-B-0002-00019283");
+  if (visitaEnriquecida?.platos.length !== 3) {
+    throw new Error(
+      `Debe tener 3 platos, obtuvo ${visitaEnriquecida?.platos.length}`
+    );
+  }
+  if (
+    visitaEnriquecida?.ticketAdjunto?.numeroTicketFiscal !== "FAC-B-0002-00019283"
+  ) {
+    throw new Error(
+      `Número de ticket fiscal incorrecto: obtuvo ${visitaEnriquecida?.ticketAdjunto?.numeroTicketFiscal}`
+    );
+  }
   console.log("✔ Test E2E de enriquecimiento de platos y ticket superado con éxito!");
 }
 
 run()
-  .catch(console.error)
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

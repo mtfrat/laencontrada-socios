@@ -1,28 +1,43 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/guards";
 import { FranjaHoraria } from "@prisma/client";
+
+const visitaDetailInclude = {
+  socio: {
+    select: {
+      id: true,
+      nombre: true,
+      apellido: true,
+      dni: true,
+      numeroSocio: true,
+    },
+  },
+  registradoPor: {
+    select: {
+      id: true,
+      nombre: true,
+      username: true,
+    },
+  },
+  platos: true,
+  ticketAdjunto: true,
+} as const;
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getStaffSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireStaffSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { id } = await params;
 
     const visita = await prisma.visitaConsumo.findUnique({
       where: { id },
-      include: {
-        socio: true,
-        registradoPor: true,
-        platos: true,
-        ticketAdjunto: true,
-      },
+      include: visitaDetailInclude,
     });
 
     if (!visita) {
@@ -44,10 +59,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getStaffSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireStaffSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { id } = await params;
     const body = await request.json();
@@ -58,7 +72,7 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "Visita no encontrada." }, { status: 404 });
     }
 
-    // Ejecutar actualizaci�n en transacci�n
+    // Ejecutar actualización en transacción
     const visitaActualizada = await prisma.$transaction(async (tx) => {
       // 1. Actualizar campos de la visita
       const updated = await tx.visitaConsumo.update({
@@ -72,7 +86,7 @@ export async function PUT(
         },
       });
 
-      // 2. Si se env�an platos consumidos, reemplazarlos
+      // 2. Si se envían platos consumidos, reemplazarlos
       if (Array.isArray(platos)) {
         await tx.itemPlatoConsumido.deleteMany({
           where: { visitaConsumoId: id },
@@ -92,7 +106,7 @@ export async function PUT(
         }
       }
 
-      // 3. Si se env�a informaci�n de ticket
+      // 3. Si se envía información de ticket
       if (numeroTicketFiscal !== undefined || urlArchivo !== undefined) {
         await tx.ticketAdjunto.upsert({
           where: { visitaConsumoId: id },
@@ -114,12 +128,7 @@ export async function PUT(
     // Devolver visita completa
     const visitaCompleta = await prisma.visitaConsumo.findUnique({
       where: { id: visitaActualizada.id },
-      include: {
-        socio: true,
-        registradoPor: true,
-        platos: true,
-        ticketAdjunto: true,
-      },
+      include: visitaDetailInclude,
     });
 
     return NextResponse.json({ success: true, visita: visitaCompleta });

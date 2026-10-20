@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSocioSession } from "@/lib/auth";
+import { requireSocioSession } from "@/lib/guards";
 import { EstadoCanje } from "@prisma/client";
 
 export async function GET(
@@ -8,10 +8,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSocioSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireSocioSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { id } = await params;
 
@@ -87,10 +86,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSocioSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireSocioSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { id } = await params;
 

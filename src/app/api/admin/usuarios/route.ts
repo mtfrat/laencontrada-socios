@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/guards";
 import { RolUsuario } from "@prisma/client";
 
 export async function GET() {
   try {
-    const session = await getStaffSession();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const usuarios = await prisma.usuario.findMany({
       orderBy: [{ activo: "desc" }, { createdAt: "asc" }],
@@ -45,10 +44,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const body = await request.json();
     const { username, nombre, role, password } = body;

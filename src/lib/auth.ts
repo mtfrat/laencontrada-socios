@@ -1,8 +1,24 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { RolUsuario } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "laencontrada-fallback-secret";
+function resolveJwtSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || !secret.trim()) {
+    throw new Error(
+      "SESSION_SECRET no está configurado: la aplicación no puede iniciar sin un secreto de sesión seguro."
+    );
+  }
+  if (secret.trim().length < 32) {
+    throw new Error(
+      "SESSION_SECRET debe tener al menos 32 caracteres para firmar sesiones de forma segura."
+    );
+  }
+  return secret;
+}
+
+const JWT_SECRET = resolveJwtSecret();
 const SOCIO_COOKIE = "laencontrada_socio_token";
 const STAFF_COOKIE = "laencontrada_staff_token";
 
@@ -28,7 +44,7 @@ export interface StaffSessionPayload {
 // ==========================
 export async function createSocioSession(payload: Omit<SocioSessionPayload, "type">) {
   const token = jwt.sign({ ...payload, type: "SOCIO" }, JWT_SECRET, {
-    expiresIn: "30d",
+    expiresIn: "7d",
   });
 
   const cookieStore = await cookies();
@@ -37,7 +53,7 @@ export async function createSocioSession(payload: Omit<SocioSessionPayload, "typ
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
+    maxAge: 7 * 24 * 60 * 60, // 7 días
   });
 
   return token;
@@ -48,13 +64,37 @@ export async function getSocioSession(): Promise<SocioSessionPayload | null> {
   const token = cookieStore.get(SOCIO_COOKIE)?.value;
   if (!token) return null;
 
+  let decoded: SocioSessionPayload;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as SocioSessionPayload;
+    decoded = jwt.verify(token, JWT_SECRET) as SocioSessionPayload;
     if (decoded.type !== "SOCIO") return null;
-    return decoded;
   } catch {
     return null;
   }
+
+  // Revocación: la sesión solo vale mientras el socio exista y esté activo.
+  // También refresca los datos del payload desde la base.
+  const socio = await prisma.socio.findUnique({
+    where: { id: decoded.id },
+    select: {
+      id: true,
+      dni: true,
+      nombre: true,
+      apellido: true,
+      numeroSocio: true,
+      activo: true,
+    },
+  });
+  if (!socio || !socio.activo) return null;
+
+  return {
+    id: socio.id,
+    dni: socio.dni,
+    nombre: socio.nombre,
+    apellido: socio.apellido,
+    numeroSocio: socio.numeroSocio,
+    type: "SOCIO",
+  };
 }
 
 export async function clearSocioSession() {
@@ -87,13 +127,35 @@ export async function getStaffSession(): Promise<StaffSessionPayload | null> {
   const token = cookieStore.get(STAFF_COOKIE)?.value;
   if (!token) return null;
 
+  let decoded: StaffSessionPayload;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as StaffSessionPayload;
+    decoded = jwt.verify(token, JWT_SECRET) as StaffSessionPayload;
     if (decoded.type !== "STAFF") return null;
-    return decoded;
   } catch {
     return null;
   }
+
+  // Revocación: la sesión solo vale mientras el usuario exista.
+  // El rol se refresca desde la base en cada lectura (un descenso de
+  // rol surte efecto inmediato, sin esperar a que venza el token).
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: decoded.id },
+    select: {
+      id: true,
+      username: true,
+      nombre: true,
+      role: true,
+    },
+  });
+  if (!usuario) return null;
+
+  return {
+    id: usuario.id,
+    username: usuario.username,
+    nombre: usuario.nombre,
+    role: usuario.role as RolUsuario,
+    type: "STAFF",
+  };
 }
 
 export async function clearStaffSession() {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { calculateTablePoints } from "@/lib/points-engine";
 import {
   Calculator,
   Users,
@@ -61,15 +62,25 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
     sociosAcreditados: Array<{ id: string; nombre: string; dni: string; puntosActuales: number }>;
   } | null>(null);
 
-  // Cálculo en tiempo real
+  // Cálculo en tiempo real (mismo motor que usa el servidor en /api/pos/puntos)
   const { gastoPromedio, puntosCalculados } = useMemo(() => {
     const monto = parseFloat(totalTicket) || 0;
-    if (monto <= 0 || comensales < 1) {
+    if (monto <= 0 || comensales < 1 || pesosPorPunto <= 0) {
       return { gastoPromedio: 0, puntosCalculados: 0 };
     }
-    const promedio = Math.round((monto / comensales) * 100) / 100;
-    const puntos = Math.floor(promedio / pesosPorPunto);
-    return { gastoPromedio: promedio, puntosCalculados: puntos };
+    try {
+      const calc = calculateTablePoints({
+        totalTicket: monto,
+        guestCount: comensales,
+        pesosPorPunto,
+      });
+      return {
+        gastoPromedio: calc.gastoPromedioPorPersona,
+        puntosCalculados: calc.puntosPorSocio,
+      };
+    } catch {
+      return { gastoPromedio: 0, puntosCalculados: 0 };
+    }
   }, [totalTicket, comensales, pesosPorPunto]);
 
   // Búsqueda en vivo de socios

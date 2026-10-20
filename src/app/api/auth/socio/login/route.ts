@@ -1,30 +1,63 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSocioSession } from "@/lib/auth";
+import {
+  getClientIp,
+  socioLoginDniLimiter,
+  socioLoginIpLimiter,
+} from "@/lib/rate-limit";
+
+const RATE_LIMIT_ERROR =
+  "Demasiados intentos de ingreso. Esperá unos minutos y volvé a intentar.";
+const INTERNAL_ERROR =
+  "No pudimos iniciar tu sesión en este momento. Intenta nuevamente.";
+
+function rateLimitedResponse(retryAfterSeconds: number) {
+  return NextResponse.json(
+    { success: false, code: "RATE_LIMITED", error: RATE_LIMIT_ERROR },
+    { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+  );
+}
 
 export async function POST(request: Request) {
+  const ipDecision = socioLoginIpLimiter.hit(`ip:${getClientIp(request)}`);
+  if (!ipDecision.allowed) {
+    return rateLimitedResponse(ipDecision.retryAfterSeconds);
+  }
+
   try {
     const body = await request.json();
     const rawDni = body?.dni;
 
     if (!rawDni || typeof rawDni !== "string") {
       return NextResponse.json(
-        { success: false, error: "El número de DNI es obligatorio." },
+        {
+          success: false,
+          code: "DNI_REQUIRED",
+          error: "El número de DNI es obligatorio.",
+        },
         { status: 400 }
       );
     }
 
-    // Normalizar DNI: remover puntos, espacios, guiones
     const cleanDni = rawDni.replace(/[.\-\s]/g, "").trim();
 
-    if (cleanDni.length < 6) {
+    if (!/^\d{6,20}$/.test(cleanDni)) {
       return NextResponse.json(
-        { success: false, error: "El DNI ingresado no es válido." },
+        {
+          success: false,
+          code: "DNI_INVALID",
+          error: "El DNI ingresado no es válido.",
+        },
         { status: 400 }
       );
     }
 
-    // Buscar socio en Supabase
+    const dniDecision = socioLoginDniLimiter.hit(`dni:${cleanDni}`);
+    if (!dniDecision.allowed) {
+      return rateLimitedResponse(dniDecision.retryAfterSeconds);
+    }
+
     const socio = await prisma.socio.findUnique({
       where: { dni: cleanDni },
       select: {
@@ -43,7 +76,11 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "No encontramos ningún socio registrado con el DNI " + cleanDni + ". Puedes solicitar el alta con tu mozo.",
+          code: "NOT_FOUND",
+          error:
+            "No encontramos ningún socio registrado con el DNI " +
+            cleanDni +
+            ". Puedes solicitar el alta con tu mozo.",
         },
         { status: 404 }
       );
@@ -53,13 +90,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Esta cuenta de socio se encuentra pausada. Por favor consulta con la administración.",
+          code: "ACCOUNT_DISABLED",
+          error:
+            "Esta cuenta de socio se encuentra pausada. Por favor consulta con la administración.",
         },
         { status: 403 }
       );
     }
 
-    // Crear sesión HTTP-Only
     await createSocioSession({
       id: socio.id,
       dni: socio.dni,
@@ -80,32 +118,14 @@ export async function POST(request: Request) {
         puntosHistoricos: socio.puntosHistoricos,
       },
     });
-  } catch (error: any) {
-    console.error("Error en socio login:", error);
-
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Falta configurar DATABASE_URL en las Variables de Entorno de Vercel. Luego debes hacer Redeploy.",
-        },
-        { status: 500 }
-      );
-    }
-
-    const rawMessage = error?.message || "";
-    if (rawMessage.includes("PrismaClient") || rawMessage.includes("database") || rawMessage.includes("connect")) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Error de conexión con la base de datos Supabase: " + rawMessage,
-        },
-        { status: 500 }
-      );
-    }
+  } catch (error) {
+    console.error("Error en socio login:", {
+      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+      message: error instanceof Error ? error.message : String(error),
+    });
 
     return NextResponse.json(
-      { success: false, error: error?.message || "Ocurrió un error al procesar el ingreso. Intenta nuevamente." },
+      { success: false, code: "INTERNAL_ERROR", error: INTERNAL_ERROR },
       { status: 500 }
     );
   }

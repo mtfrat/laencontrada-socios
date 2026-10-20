@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/guards";
 
 export async function GET(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireStaffSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { searchParams } = new URL(request.url);
     const query = (searchParams.get("q") || "").trim();

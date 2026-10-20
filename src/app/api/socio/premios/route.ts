@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSocioSession } from "@/lib/auth";
+import { requireSocioSession } from "@/lib/guards";
 import { EstadoCanje } from "@prisma/client";
 
 export async function GET() {
   try {
-    const session = await getSocioSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireSocioSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const socio = await prisma.socio.findUnique({
       where: { id: session.id },

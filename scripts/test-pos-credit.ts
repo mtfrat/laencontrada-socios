@@ -68,11 +68,22 @@ async function run() {
     visitas: visitasCount,
   });
 
-  console.assert(socioAfter?.puntosActuales === socioBefore.puntosActuales + 25);
-  console.assert(socioAfter?.puntosHistoricos === socioBefore.puntosHistoricos + 25);
+  if (socioAfter?.puntosActuales !== socioBefore.puntosActuales + 25) {
+    throw new Error(
+      `puntosActuales incorrecto: esperaba ${socioBefore.puntosActuales + 25}, obtuvo ${socioAfter?.puntosActuales}`
+    );
+  }
+  if (socioAfter?.puntosHistoricos !== socioBefore.puntosHistoricos + 25) {
+    throw new Error(
+      `puntosHistoricos incorrecto: esperaba ${socioBefore.puntosHistoricos + 25}, obtuvo ${socioAfter?.puntosHistoricos}`
+    );
+  }
   console.log("✔ Test E2E de acreditación de mesa en Supabase superado con éxito");
 }
 
 run()
-  .catch(console.error)
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

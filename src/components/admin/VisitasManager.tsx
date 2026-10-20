@@ -146,7 +146,11 @@ export default function VisitasManager() {
     setEditPlatos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handlePlatoChange = (index: number, field: keyof PlatoItem, value: any) => {
+  const handlePlatoChange = (
+    index: number,
+    field: keyof PlatoItem,
+    value: PlatoItem[keyof PlatoItem]
+  ) => {
     setEditPlatos((prev) =>
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
@@ -330,7 +334,7 @@ export default function VisitasManager() {
 
                     {visita.platos.length === 0 ? (
                       <p className="text-xs text-[#f5ede6]/40 italic">
-                        Sin platos cargados aún. Haz clic en "Detallar Platos" para registrar qué comió el cliente.
+                        Sin platos cargados aún. Haz clic en &quot;Detallar Platos&quot; para registrar qué comió el cliente.
                       </p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
@@ -407,7 +411,11 @@ export default function VisitasManager() {
                   </label>
                   <select
                     value={editFranja}
-                    onChange={(e) => setEditFranja(e.target.value as any)}
+                    onChange={(e) =>
+                      setEditFranja(
+                        e.target.value as "ALMUERZO" | "CENA" | "TARDE" | "OTRO"
+                      )
+                    }
                     className="w-full px-3.5 py-2.5 bg-[#050304] border border-[#5c131d]/30 rounded-xl text-xs text-white focus:outline-none focus:border-[#5c131d]"
                   >
                     <option value="ALMUERZO">ALMUERZO</option>
@@ -466,7 +474,7 @@ export default function VisitasManager() {
                 {/* Lista de platos editables */}
                 {editPlatos.length === 0 ? (
                   <div className="p-4 rounded-2xl bg-[#050304] border border-[#5c131d]/20 text-center text-xs text-[#f5ede6]/40">
-                    No has agregado ningún plato aún. Usa las sugerencias de arriba o el botón "Agregar Plato".
+                    No has agregado ningún plato aún. Usa las sugerencias de arriba o el botón &quot;Agregar Plato&quot;.
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">

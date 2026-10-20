@@ -1,31 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSocioSession } from "@/lib/auth";
+import { requireSocioSession } from "@/lib/guards";
 import { TipoTransaccion } from "@prisma/client";
+import { ApiError, errorResponse } from "@/lib/api-error";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ visitaId: string }> }
 ) {
   try {
-    const session = await getSocioSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireSocioSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { visitaId } = await params;
 
     const config = await prisma.configuracionPuntos.findFirst();
 
-    // 1. Verificar si las encuestas est�n activas globalmente
+    // 1. Verificar si las encuestas están activas globalmente
     if (config && config.encuestaActiva === false) {
       return NextResponse.json(
-        { success: false, error: "Las encuestas se encuentran moment�neamente pausadas por la administraci�n." },
+        { success: false, error: "Las encuestas se encuentran momentáneamente pausadas por la administración." },
         { status: 403 }
       );
     }
 
-    // 2. Verificar regla de frecuencia: �1 sola vez en la vida del socio?
+    // 2. Verificar regla de frecuencia: ¿1 sola vez en la vida del socio?
     if (config && config.encuestaUnaVezPorSocio === true) {
       const yaRespondioAlguna = await prisma.respuestaEncuesta.count({
         where: { socioId: session.id },
@@ -34,7 +34,7 @@ export async function GET(
         return NextResponse.json({
           success: true,
           yaRespondida: true,
-          mensajeFrecuencia: "Ya has participado en la encuesta de satisfacci�n anteriormente.",
+          mensajeFrecuencia: "Ya has participado en la encuesta de satisfacción anteriormente.",
         });
       }
     }
@@ -96,10 +96,9 @@ export async function POST(
   { params }: { params: Promise<{ visitaId: string }> }
 ) {
   try {
-    const session = await getSocioSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireSocioSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { visitaId } = await params;
     const body = await request.json();
@@ -114,26 +113,19 @@ export async function POST(
 
     const config = await prisma.configuracionPuntos.findFirst();
 
-    // 1. Verificar si las encuestas est�n activas
+    // 1. Verificar si las encuestas están activas
     if (config && config.encuestaActiva === false) {
       return NextResponse.json(
-        { success: false, error: "Las encuestas se encuentran pausadas por la administraci�n." },
+        {
+          success: false,
+          code: "ENCUESTA_PAUSADA",
+          error: "Las encuestas se encuentran pausadas por la administración.",
+        },
         { status: 403 }
       );
     }
 
-    // 2. Verificar regla de solo 1 vez por socio en su vida
-    if (config && config.encuestaUnaVezPorSocio === true) {
-      const yaRespondioAlguna = await prisma.respuestaEncuesta.count({
-        where: { socioId: session.id },
-      });
-      if (yaRespondioAlguna > 0) {
-        return NextResponse.json(
-          { success: false, error: "Solo se permite responder la encuesta 1 vez por socio." },
-          { status: 400 }
-        );
-      }
-    }
+    const unaVezPorSocio = config?.encuestaUnaVezPorSocio === true;
 
     const visita = await prisma.visitaConsumo.findUnique({
       where: { id: visitaId },
@@ -142,39 +134,109 @@ export async function POST(
 
     if (!visita || visita.socioId !== session.id) {
       return NextResponse.json(
-        { success: false, error: "Visita no encontrada." },
+        { success: false, code: "VISITA_NO_ENCONTRADA", error: "Visita no encontrada." },
         { status: 404 }
       );
     }
 
     if (visita.respuestaEncuesta) {
       return NextResponse.json(
-        { success: false, error: "Esta visita ya fue evaluada previamente." },
+        {
+          success: false,
+          code: "ENCUESTA_YA_RESPONDIDA",
+          error: "Esta visita ya fue evaluada previamente.",
+        },
         { status: 400 }
       );
     }
 
+    // Fast-path de la regla "solo 1 vez por socio" (autoritativo dentro de la transacción)
+    if (unaVezPorSocio) {
+      const yaRespondioAlguna = await prisma.respuestaEncuesta.count({
+        where: { socioId: session.id },
+      });
+      if (yaRespondioAlguna > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: "SOLO_UNA_VEZ",
+            error: "Solo se permite responder la encuesta 1 vez por socio.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const puntosAcreditar = config?.puntosPorEncuesta || 10;
 
-    // Ejecutar transacci�n en Supabase
     const resultado = await prisma.$transaction(async (tx) => {
-      // 1. Crear respuesta de encuesta
-      const nuevaRespuesta = await tx.respuestaEncuesta.create({
-        data: {
-          visitaConsumoId: visitaId,
-          socioId: session.id,
-          puntosOtorgados: puntosAcreditar,
-          comentarios: comentarios ? String(comentarios).trim() : null,
-          items: {
-            create: respuestas.map((r: { preguntaId: string; puntuacion: number }) => ({
-              preguntaId: r.preguntaId,
-              puntuacion: Math.min(5, Math.max(1, Number(r.puntuacion) || 5)),
-            })),
+      // Lock de fila del socio: serializa envíos concurrentes del mismo socio
+      const ahora = new Date();
+      const socioOk = await tx.socio.updateMany({
+        where: { id: session.id },
+        data: { updatedAt: ahora },
+      });
+      if (socioOk.count === 0) {
+        throw new ApiError(401, "UNAUTHORIZED", "No autorizado.");
+      }
+
+      // 2. Re-verificar pertenencia de la visita dentro de la transacción
+      const visitaOk = await tx.visitaConsumo.updateMany({
+        where: { id: visitaId, socioId: session.id },
+        data: { updatedAt: ahora },
+      });
+      if (visitaOk.count === 0) {
+        throw new ApiError(404, "VISITA_NO_ENCONTRADA", "Visita no encontrada.");
+      }
+
+      // 3. Regla "solo 1 vez por socio", autoritativa tras el lock (excluye la visita en curso)
+      if (unaVezPorSocio) {
+        const respondioOtra = await tx.respuestaEncuesta.count({
+          where: {
+            socioId: session.id,
+            visitaConsumoId: { not: visitaId },
           },
-        },
+        });
+        if (respondioOtra > 0) {
+          throw new ApiError(
+            400,
+            "SOLO_UNA_VEZ",
+            "Solo se permite responder la encuesta 1 vez por socio."
+          );
+        }
+      }
+
+      // 4. Crear respuesta (la restricción única de visitaConsumoId impide duplicados)
+      let nuevaRespuesta;
+      try {
+        nuevaRespuesta = await tx.respuestaEncuesta.create({
+          data: {
+            visitaConsumoId: visitaId,
+            socioId: session.id,
+            puntosOtorgados: puntosAcreditar,
+            comentarios: comentarios ? String(comentarios).trim() : null,
+          },
+        });
+      } catch (error) {
+        if ((error as { code?: string })?.code === "P2002") {
+          throw new ApiError(
+            400,
+            "ENCUESTA_YA_RESPONDIDA",
+            "Esta visita ya fue evaluada previamente."
+          );
+        }
+        throw error;
+      }
+
+      await tx.itemRespuestaEncuesta.createMany({
+        data: respuestas.map((r: { preguntaId: string; puntuacion: number }) => ({
+          respuestaEncuestaId: nuevaRespuesta.id,
+          preguntaId: r.preguntaId,
+          puntuacion: Math.min(5, Math.max(1, Number(r.puntuacion) || 5)),
+        })),
       });
 
-      // 2. Acreditar puntos al socio
+      // 5. Acreditar puntos al socio
       await tx.socio.update({
         where: { id: session.id },
         data: {
@@ -183,13 +245,13 @@ export async function POST(
         },
       });
 
-      // 3. Registrar en el libro mayor de auditor�a
+      // 6. Registrar en el libro mayor de auditoría
       await tx.transaccionPuntos.create({
         data: {
           socioId: session.id,
           tipo: TipoTransaccion.ENCUESTA,
           puntos: puntosAcreditar,
-          motivo: "Bono por responder encuesta de satisfacci�n gastron�mica",
+          motivo: "Bono por responder encuesta de satisfacción gastronómica",
         },
       });
 
@@ -202,9 +264,12 @@ export async function POST(
       respuestaId: resultado.id,
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return errorResponse(error);
+    }
     console.error("Error enviando encuesta:", error);
     return NextResponse.json(
-      { success: false, error: "Ocurri� un error al procesar tu calificaci�n." },
+      { success: false, error: "Ocurrió un error al procesar tu calificación." },
       { status: 500 }
     );
   }

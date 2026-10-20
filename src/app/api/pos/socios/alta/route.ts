@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/guards";
 
 export async function POST(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireStaffSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const body = await request.json();
     const { dni, nombre, apellido, telefono, email } = body;
@@ -55,54 +54,91 @@ export async function POST(request: Request) {
       });
     }
 
-    // Calcular el siguiente número de socio disponible correlativo
-    const allSocios = await prisma.socio.findMany({
-      select: { numeroSocio: true },
-    });
+    // Calcular el siguiente número de socio correlativo, reintentando ante
+    // colisiones concurrentes (dni o numeroSocio son únicos en la base)
+    let nuevoSocio = null;
+    for (let intento = 0; intento < 3 && !nuevoSocio; intento++) {
+      const allSocios = await prisma.socio.findMany({
+        select: { numeroSocio: true },
+      });
 
-    let maxNum = 1000;
-    for (const s of allSocios) {
-      const match = s.numeroSocio.match(/\d+/);
-      if (match) {
-        const num = parseInt(match[0], 10);
-        if (num > maxNum) maxNum = num;
+      let maxNum = 1000;
+      for (const s of allSocios) {
+        const match = s.numeroSocio.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+
+      let nextNum = maxNum + 1;
+      let nextNumSocio = `SOC-${nextNum}`;
+
+      while (allSocios.some((s) => s.numeroSocio === nextNumSocio)) {
+        nextNum++;
+        nextNumSocio = `SOC-${nextNum}`;
+      }
+
+      try {
+        nuevoSocio = await prisma.socio.create({
+          data: {
+            numeroSocio: nextNumSocio,
+            dni: cleanDni,
+            nombre: nombre.trim(),
+            apellido: apellido && typeof apellido === "string" ? apellido.trim() : null,
+            telefono: telefono && typeof telefono === "string" && telefono.trim() ? telefono.trim() : null,
+            email: email && typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
+            puntosActuales: 0,
+            puntosHistoricos: 0,
+            activo: true,
+          },
+          select: {
+            id: true,
+            numeroSocio: true,
+            dni: true,
+            nombre: true,
+            apellido: true,
+            puntosActuales: true,
+          },
+        });
+      } catch (error) {
+        if ((error as { code?: string })?.code !== "P2002") {
+          throw error;
+        }
+        const porDni = await prisma.socio.findUnique({
+          where: { dni: cleanDni },
+        });
+        if (porDni) {
+          return NextResponse.json({
+            success: true,
+            yaExistia: true,
+            socio: {
+              id: porDni.id,
+              numeroSocio: porDni.numeroSocio,
+              dni: porDni.dni,
+              nombre: porDni.nombre,
+              apellido: porDni.apellido,
+              puntosActuales: porDni.puntosActuales,
+            },
+            message: `El socio ya se encontraba registrado (${porDni.nombre} ${porDni.apellido || ""}).`,
+          });
+        }
       }
     }
 
-    let nextNum = maxNum + 1;
-    let nextNumSocio = `SOC-${nextNum}`;
-
-    // Asegurar que no colisione
-    while (allSocios.some((s) => s.numeroSocio === nextNumSocio)) {
-      nextNum++;
-      nextNumSocio = `SOC-${nextNum}`;
+    if (!nuevoSocio) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No se pudo asignar un número de socio. Intenta nuevamente.",
+        },
+        { status: 500 }
+      );
     }
-
-    // Crear el nuevo socio
-    const nuevoSocio = await prisma.socio.create({
-      data: {
-        numeroSocio: nextNumSocio,
-        dni: cleanDni,
-        nombre: nombre.trim(),
-        apellido: apellido && typeof apellido === "string" ? apellido.trim() : null,
-        telefono: telefono && typeof telefono === "string" && telefono.trim() ? telefono.trim() : null,
-        email: email && typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
-        puntosActuales: 0,
-        puntosHistoricos: 0,
-        activo: true,
-      },
-    });
 
     return NextResponse.json({
       success: true,
-      socio: {
-        id: nuevoSocio.id,
-        numeroSocio: nuevoSocio.numeroSocio,
-        dni: nuevoSocio.dni,
-        nombre: nuevoSocio.nombre,
-        apellido: nuevoSocio.apellido,
-        puntosActuales: nuevoSocio.puntosActuales,
-      },
+      socio: nuevoSocio,
       message: `¡Socio ${nuevoSocio.nombre} registrado con éxito con el número ${nuevoSocio.numeroSocio}!`,
     });
   } catch (error) {

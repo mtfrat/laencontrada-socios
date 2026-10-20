@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { getSocioSession } from "@/lib/auth";
-import { EstadoCanje } from "@prisma/client";
+import { requireSocioSession } from "@/lib/guards";
+import { ApiError, errorResponse } from "@/lib/api-error";
+import { CanjePremio, EstadoCanje } from "@prisma/client";
 
 function generateCouponCode(): string {
-  // Caracteres legibles evitando confusiones (sin O, 0, I, 1)
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "CANJE-";
   const bytes = crypto.randomBytes(6);
@@ -15,19 +15,37 @@ function generateCouponCode(): string {
   return code;
 }
 
+async function generateUniqueCouponCode(): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = generateCouponCode();
+    const exists = await prisma.canjePremio.findUnique({
+      where: { codigoQR: candidate },
+    });
+    if (!exists) return candidate;
+  }
+  throw new ApiError(
+    500,
+    "CODIGO_NO_DISPONIBLE",
+    "No se pudieron generar códigos de cupón únicos. Intenta nuevamente."
+  );
+}
+
 export async function POST(request: Request) {
   try {
-    const session = await getSocioSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireSocioSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const body = await request.json();
     const { premioId } = body;
 
     if (!premioId || typeof premioId !== "string") {
       return NextResponse.json(
-        { success: false, error: "El ID del premio es requerido." },
+        {
+          success: false,
+          code: "PREMIO_REQUERIDO",
+          error: "El ID del premio es requerido.",
+        },
         { status: 400 }
       );
     }
@@ -39,14 +57,17 @@ export async function POST(request: Request) {
 
     if (!socio || !socio.activo) {
       return NextResponse.json(
-        { success: false, error: "Socio no encontrado o inactivo." },
+        {
+          success: false,
+          code: "CUENTA_INACTIVA",
+          error: "Socio no encontrado o inactivo.",
+        },
         { status: 403 }
       );
     }
 
     const now = new Date();
 
-    // 1. Limpiar canjes expirados
     await prisma.canjePremio.updateMany({
       where: {
         socioId: socio.id,
@@ -56,92 +77,154 @@ export async function POST(request: Request) {
       data: { estado: EstadoCanje.EXPIRADO },
     });
 
-    // 2. Verificar si ya tiene un canje activo pendiente
-    const canjeExistente = await prisma.canjePremio.findFirst({
-      where: {
-        socioId: socio.id,
-        estado: EstadoCanje.PENDIENTE,
-        fechaExpiracion: { gt: now },
-      },
-      include: {
-        premio: { select: { titulo: true } },
-      },
-    });
-
-    if (canjeExistente) {
-      return NextResponse.json({
-        success: false,
-        error: `Ya tienes un cupón pendiente para "${canjeExistente.premio.titulo}". Debes validarlo con el mozo o cancelarlo antes de solicitar otro.`,
-        canjePendienteId: canjeExistente.id,
-      }, { status: 400 });
-    }
-
-    // 3. Buscar el premio
-    const premio = await prisma.premio.findUnique({
-      where: { id: premioId },
-    });
+    const premio = await prisma.premio.findUnique({ where: { id: premioId } });
 
     if (!premio || !premio.activo) {
       return NextResponse.json(
-        { success: false, error: "El premio seleccionado no está disponible." },
+        {
+          success: false,
+          code: "PREMIO_NO_DISPONIBLE",
+          error: "El premio seleccionado no está disponible.",
+        },
         { status: 404 }
       );
     }
 
-    if (premio.stock === 0) {
-      return NextResponse.json(
-        { success: false, error: "Lo sentimos, este premio se encuentra momentáneamente sin stock." },
-        { status: 400 }
-      );
-    }
-
-    // 4. Verificar saldo
-    if (socio.puntosActuales < premio.puntosRequeridos) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Puntos insuficientes. Tienes ${socio.puntosActuales} pts y necesitas ${premio.puntosRequeridos} pts.`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 5. Minutos de vigencia
     const config = await prisma.configuracionPuntos.findFirst();
     const minutos = config?.minutosValidezQRCanje || 15;
     const fechaExpiracion = new Date(Date.now() + minutos * 60 * 1000);
 
-    // 6. Generar código QR único
-    let codigoQR = generateCouponCode();
-    let colision = await prisma.canjePremio.findUnique({ where: { codigoQR } });
-    while (colision) {
-      codigoQR = generateCouponCode();
-      colision = await prisma.canjePremio.findUnique({ where: { codigoQR } });
+    let canje: CanjePremio | null = null;
+
+    for (let intento = 0; intento < 3 && !canje; intento++) {
+      const codigoQR = await generateUniqueCouponCode();
+
+      try {
+        canje = await prisma.$transaction(async (tx) => {
+          const socioOk = await tx.socio.updateMany({
+            where: {
+              id: socio.id,
+              activo: true,
+              puntosActuales: { gte: premio.puntosRequeridos },
+            },
+            data: { updatedAt: new Date() },
+          });
+
+          if (socioOk.count === 0) {
+            const actual = await tx.socio.findUnique({
+              where: { id: socio.id },
+            });
+            if (!actual || !actual.activo) {
+              throw new ApiError(
+                403,
+                "CUENTA_INACTIVA",
+                "Socio no encontrado o inactivo."
+              );
+            }
+            throw new ApiError(
+              400,
+              "SALDO_INSUFICIENTE",
+              `Puntos insuficientes. Tienes ${actual.puntosActuales} pts y necesitas ${premio.puntosRequeridos} pts.`
+            );
+          }
+
+          const pendiente = await tx.canjePremio.findFirst({
+            where: {
+              socioId: socio.id,
+              estado: EstadoCanje.PENDIENTE,
+              fechaExpiracion: { gt: now },
+            },
+            include: { premio: true },
+          });
+
+          if (pendiente) {
+            throw new ApiError(
+              400,
+              "CANJE_PENDIENTE",
+              `Ya tienes un cupón pendiente para "${pendiente.premio.titulo}". Debes validarlo con el mozo o cancelarlo antes de solicitar otro.`,
+              { canjePendienteId: pendiente.id }
+            );
+          }
+
+          if (premio.stock !== -1) {
+            const stockOk = await tx.premio.updateMany({
+              where: {
+                id: premio.id,
+                activo: true,
+                stock: { gt: 0 },
+              },
+              data: { updatedAt: new Date() },
+            });
+
+            if (stockOk.count === 0) {
+              const actualPremio = await tx.premio.findUnique({
+                where: { id: premio.id },
+              });
+              if (!actualPremio || !actualPremio.activo) {
+                throw new ApiError(
+                  404,
+                  "PREMIO_NO_DISPONIBLE",
+                  "El premio seleccionado no está disponible."
+                );
+              }
+              throw new ApiError(
+                400,
+                "SIN_STOCK",
+                "Lo sentimos, este premio se encuentra momentáneamente sin stock."
+              );
+            }
+          }
+
+          return tx.canjePremio.create({
+            data: {
+              socioId: socio.id,
+              premioId: premio.id,
+              codigoQR,
+              estado: EstadoCanje.PENDIENTE,
+              puntosGastados: premio.puntosRequeridos,
+              fechaExpiracion,
+            },
+          });
+        });
+      } catch (error) {
+        if ((error as { code?: string })?.code === "P2002") {
+          continue;
+        }
+        throw error;
+      }
     }
 
-    // 7. Crear el registro de canje PENDIENTE
-    const canje = await prisma.canjePremio.create({
-      data: {
-        socioId: socio.id,
-        premioId: premio.id,
-        codigoQR,
-        estado: EstadoCanje.PENDIENTE,
-        puntosGastados: premio.puntosRequeridos,
-        fechaExpiracion,
-      },
-    });
+    if (!canje) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "CODIGO_NO_DISPONIBLE",
+          error:
+            "No se pudieron generar códigos de cupón únicos. Intenta nuevamente.",
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       canjeId: canje.id,
       codigoQR: canje.codigoQR,
       fechaExpiracion: canje.fechaExpiracion,
-      message: "Cupón generado exitosamente. Tienes 15 minutos para presentarlo a tu mozo.",
+      message:
+        "Cupón generado exitosamente. Tienes 15 minutos para presentarlo a tu mozo.",
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return errorResponse(error);
+    }
     console.error("Error al generar cupón de canje:", error);
     return NextResponse.json(
-      { success: false, error: "Error al generar el cupón de canje." },
+      {
+        success: false,
+        code: "INTERNAL_ERROR",
+        error: "Error al generar el cupón de canje.",
+      },
       { status: 500 }
     );
   }

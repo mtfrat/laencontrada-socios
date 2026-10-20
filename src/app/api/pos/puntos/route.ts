@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireStaffSession } from "@/lib/guards";
 import { calculateTablePoints } from "@/lib/points-engine";
 import { FranjaHoraria, TipoTransaccion } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireStaffSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const body = await request.json();
     const {

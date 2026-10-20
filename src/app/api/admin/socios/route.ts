@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/guards";
 import { TipoTransaccion } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { searchParams } = new URL(request.url);
     const query = (searchParams.get("query") || "").trim();
@@ -93,10 +92,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "No autorizado" }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const body = await request.json();
     const { action } = body;
@@ -123,46 +121,83 @@ export async function POST(request: Request) {
         }, { status: 400 });
       }
 
-      // Calcular siguiente número de socio correlativo
-      const allSocios = await prisma.socio.findMany({ select: { numeroSocio: true } });
-      let maxNum = 1000;
-      for (const s of allSocios) {
-        const match = s.numeroSocio.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          if (num > maxNum) maxNum = num;
+      // Calcular siguiente número de socio, reintentando ante colisiones
+      // concurrentes (dni y numeroSocio son únicos en la base)
+      let nuevoSocio = null;
+      for (let intento = 0; intento < 3 && !nuevoSocio; intento++) {
+        const allSocios = await prisma.socio.findMany({ select: { numeroSocio: true } });
+        let maxNum = 1000;
+        for (const s of allSocios) {
+          const match = s.numeroSocio.match(/\d+/);
+          if (match) {
+            const num = parseInt(match[0], 10);
+            if (num > maxNum) maxNum = num;
+          }
+        }
+        let nextNum = maxNum + 1;
+        let nextNumSocio = `SOC-${nextNum}`;
+        while (allSocios.some((s) => s.numeroSocio === nextNumSocio)) {
+          nextNum++;
+          nextNumSocio = `SOC-${nextNum}`;
+        }
+
+        const initialPoints = Math.max(0, parseInt(puntosIniciales, 10) || 0);
+
+        try {
+          nuevoSocio = await prisma.socio.create({
+            data: {
+              numeroSocio: nextNumSocio,
+              dni: cleanDni,
+              nombre: nombre.trim(),
+              apellido: apellido && typeof apellido === "string" ? apellido.trim() : null,
+              telefono: telefono && typeof telefono === "string" && telefono.trim() ? telefono.trim() : null,
+              email: email && typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
+              puntosActuales: initialPoints,
+              puntosHistoricos: initialPoints,
+              activo: true,
+            },
+            select: {
+              id: true,
+              numeroSocio: true,
+              dni: true,
+              nombre: true,
+              apellido: true,
+              telefono: true,
+              email: true,
+              puntosActuales: true,
+              puntosHistoricos: true,
+              activo: true,
+              fechaAlta: true,
+            },
+          });
+        } catch (error) {
+          if ((error as { code?: string })?.code !== "P2002") {
+            throw error;
+          }
+          const porDni = await prisma.socio.findUnique({ where: { dni: cleanDni } });
+          if (porDni) {
+            return NextResponse.json({
+              success: false,
+              error: `Ya existe un socio con DNI ${cleanDni} (${porDni.nombre} ${porDni.apellido || ""}).`,
+            }, { status: 400 });
+          }
         }
       }
-      let nextNum = maxNum + 1;
-      let nextNumSocio = `SOC-${nextNum}`;
-      while (allSocios.some((s) => s.numeroSocio === nextNumSocio)) {
-        nextNum++;
-        nextNumSocio = `SOC-${nextNum}`;
+
+      if (!nuevoSocio) {
+        return NextResponse.json(
+          { success: false, error: "No se pudo asignar un número de socio. Intenta nuevamente." },
+          { status: 500 }
+        );
       }
 
-      const initialPoints = Math.max(0, parseInt(puntosIniciales, 10) || 0);
-
-      const nuevoSocio = await prisma.socio.create({
-        data: {
-          numeroSocio: nextNumSocio,
-          dni: cleanDni,
-          nombre: nombre.trim(),
-          apellido: apellido && typeof apellido === "string" ? apellido.trim() : null,
-          telefono: telefono && typeof telefono === "string" && telefono.trim() ? telefono.trim() : null,
-          email: email && typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
-          puntosActuales: initialPoints,
-          puntosHistoricos: initialPoints,
-          activo: true,
-        },
-      });
-
-      if (initialPoints > 0) {
+      if (nuevoSocio.puntosActuales > 0) {
         await prisma.transaccionPuntos.create({
           data: {
             socioId: nuevoSocio.id,
             registradoPorId: session.id,
             tipo: TipoTransaccion.AJUSTE_MANUAL,
-            puntos: initialPoints,
+            puntos: nuevoSocio.puntosActuales,
             motivo: "Puntos de bienvenida o saldo inicial cargado por Administración",
           },
         });

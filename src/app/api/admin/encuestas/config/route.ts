@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStaffSession } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/guards";
 
 export async function GET() {
   try {
-    const session = await getStaffSession();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const config = await prisma.configuracionPuntos.findFirst();
     return NextResponse.json({
@@ -21,7 +20,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error obteniendo config de encuestas:", error);
     return NextResponse.json(
-      { success: false, error: "Error al consultar la configuraci�n." },
+      { success: false, error: "Error al consultar la configuración." },
       { status: 500 }
     );
   }
@@ -29,10 +28,9 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const session = await getStaffSession();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
-    }
+    const auth = await requireAdminSession();
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const body = await request.json();
     const { puntosPorEncuesta, encuestaActiva, encuestaUnaVezPorSocio } = body;
@@ -77,9 +75,9 @@ export async function PUT(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error actualizando configuraci�n de encuestas:", error);
+    console.error("Error actualizando configuración de encuestas:", error);
     return NextResponse.json(
-      { success: false, error: "Error al actualizar la configuraci�n." },
+      { success: false, error: "Error al actualizar la configuración." },
       { status: 500 }
     );
   }

@@ -590,7 +590,9 @@ export default function UsuariosManager() {
                   </label>
                   <select
                     value={nuevoRole}
-                    onChange={(e) => setNuevoRole(e.target.value as any)}
+                    onChange={(e) =>
+                      setNuevoRole(e.target.value as "ADMIN" | "MOZO" | "CAJERO")
+                    }
                     className="w-full bg-[#050304] border border-[#5c131d]/30 rounded-xl px-3 py-2 text-[#f5ede6] text-sm focus:outline-none focus:border-[#5c131d]"
                   >
                     <option value="MOZO">MOZO (Salón)</option>
@@ -787,7 +789,9 @@ export default function UsuariosManager() {
                 </label>
                 <select
                   value={editRole}
-                  onChange={(e) => setEditRole(e.target.value as any)}
+                  onChange={(e) =>
+                    setEditRole(e.target.value as "ADMIN" | "MOZO" | "CAJERO")
+                  }
                   className="w-full bg-[#050304] border border-[#5c131d]/30 rounded-xl px-3 py-2 text-[#f5ede6] text-sm focus:outline-none focus:border-[#5c131d]"
                 >
                   <option value="MOZO">MOZO (Terminal de Salón /pos)</option>
