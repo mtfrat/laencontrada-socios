@@ -30,7 +30,17 @@ function sanitizeDatabaseUrl(rawUrl: string | undefined): string | undefined {
     }
   }
 
-  return url;
+  // El pooler de Supabase en modo sesión tiene un cupo pequeño de clientes.
+  // Un límite por proceso evita que el tablero agote todas las conexiones.
+  try {
+    const parsed = new URL(url);
+    if (!parsed.searchParams.has("connection_limit")) {
+      parsed.searchParams.set("connection_limit", process.env.DATABASE_CONNECTION_LIMIT || "5");
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
 }
 
 const cleanedUrl = sanitizeDatabaseUrl(process.env.DATABASE_URL);

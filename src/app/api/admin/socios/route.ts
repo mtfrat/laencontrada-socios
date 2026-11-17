@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/guards";
 import { TipoTransaccion } from "@prisma/client";
+import { dniSchema, readJsonBody, validate } from "@/lib/validation";
 
 export async function GET(request: Request) {
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { searchParams } = new URL(request.url);
     const query = (searchParams.get("query") || "").trim();
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
           _count: {
             select: {
               visitas: true,
-              canjes: true,
+              canjes: { where: { estado: "COMPLETADO" } },
             },
           },
         },
@@ -96,22 +97,36 @@ export async function POST(request: Request) {
     if (!auth.ok) return auth.response;
     const session = auth.session;
 
-    const body = await request.json();
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
+    const body = (bodyParsed.data ?? {}) as Record<string, unknown>;
     const { action } = body;
 
     // ACCION: Crear nuevo socio desde Administración
     if (action === "crear_socio") {
-      const { dni, nombre, apellido, telefono, email, puntosIniciales } = body;
-      if (!dni || typeof dni !== "string") {
-        return NextResponse.json({ success: false, error: "El DNI es obligatorio." }, { status: 400 });
-      }
-      const cleanDni = dni.replace(/\D/g, "").trim();
-      if (cleanDni.length < 5) {
-        return NextResponse.json({ success: false, error: "El DNI debe contener al menos 5 dígitos numéricos." }, { status: 400 });
-      }
-      if (!nombre || typeof nombre !== "string" || !nombre.trim()) {
-        return NextResponse.json({ success: false, error: "El nombre es obligatorio." }, { status: 400 });
-      }
+      const campos = validate(
+        z.object({
+          dni: dniSchema,
+          nombre: z
+            .string({ error: "El nombre es obligatorio." })
+            .trim()
+            .min(1, "El nombre es obligatorio."),
+          apellido: z.string().trim().optional(),
+          telefono: z.string().trim().optional(),
+          email: z.string().trim().optional(),
+          puntosIniciales: z.unknown().optional(),
+        }),
+        body
+      );
+      if (!campos.ok) return campos.response;
+      const {
+        dni: cleanDni,
+        nombre,
+        apellido,
+        telefono,
+        email,
+        puntosIniciales,
+      } = campos.data;
 
       const existing = await prisma.socio.findUnique({ where: { dni: cleanDni } });
       if (existing) {
@@ -141,7 +156,7 @@ export async function POST(request: Request) {
           nextNumSocio = `SOC-${nextNum}`;
         }
 
-        const initialPoints = Math.max(0, parseInt(puntosIniciales, 10) || 0);
+        const initialPoints = Math.max(0, parseInt(String(puntosIniciales ?? ""), 10) || 0);
 
         try {
           nuevoSocio = await prisma.socio.create({
@@ -149,9 +164,9 @@ export async function POST(request: Request) {
               numeroSocio: nextNumSocio,
               dni: cleanDni,
               nombre: nombre.trim(),
-              apellido: apellido && typeof apellido === "string" ? apellido.trim() : null,
-              telefono: telefono && typeof telefono === "string" && telefono.trim() ? telefono.trim() : null,
-              email: email && typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
+              apellido: apellido || null,
+              telefono: telefono || null,
+              email: email ? email.toLowerCase() : null,
               puntosActuales: initialPoints,
               puntosHistoricos: initialPoints,
               activo: true,
@@ -224,10 +239,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Socio no encontrado" }, { status: 404 });
     }
 
+    if (action === "actualizar_correo") {
+      const correo = validate(z.string().trim().toLowerCase().email("Ingresá un correo válido.").max(254), body.email, { requiredCode: "EMAIL_REQUIRED", code: "EMAIL_INVALID" });
+      if (!correo.ok) return correo.response;
+      if (socio.email?.toLowerCase() === correo.data) {
+        return NextResponse.json({ success: true, email: correo.data, message: "El correo ya estaba actualizado." });
+      }
+      await prisma.$transaction(async (tx) => {
+        await tx.socio.update({ where: { id: socio.id }, data: { email: correo.data, sessionVersion: { increment: 1 } } });
+        await tx.accesoSocioCodigo.updateMany({ where: { socioId: socio.id, usadoAt: null }, data: { usadoAt: new Date() } });
+      });
+      return NextResponse.json({ success: true, email: correo.data, message: "Correo actualizado. El socio deberá ingresar con un código nuevo." });
+    }
+
     // ACCION 1: Ajuste Manual de Puntos
     if (action === "ajuste_puntos") {
       const { puntos, motivo } = body;
-      const puntosInt = parseInt(puntos, 10);
+      const puntosInt = parseInt(String(puntos ?? ""), 10);
 
       if (isNaN(puntosInt) || puntosInt === 0) {
         return NextResponse.json(

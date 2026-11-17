@@ -1,0 +1,58 @@
+.member-legacy{background:#f5f0e7!important;color:#352b2b!important;padding-bottom:110px!important;color-scheme:light;font-family:Arial,Helvetica,sans-serif}
+.member-legacy header{background:#f5f0e7!important;border-color:#d7c9bb!important;backdrop-filter:none!important}
+.member-legacy header>div{max-width:1050px!important;padding:15px 24px!important;min-height:70px}
+.member-legacy header a{min-height:44px;display:inline-flex;align-items:center;border-radius:0!important}
+.member-legacy main{max-width:1050px!important;padding:48px 24px 115px!important}
+.member-legacy.member-flow main{max-width:660px!important}
+.member-legacy h1,.member-legacy h2,.member-legacy h3{font-family:'Cormorant Garamond',Georgia,serif;letter-spacing:-.02em}
+.member-legacy.member-list main>div:first-child h1{font-size:clamp(46px,5vw,66px)!important;font-weight:400!important;line-height:1!important}
+.member-legacy.member-list main>div:first-child>p{font-size:14px!important;line-height:1.7!important;max-width:600px;margin-top:14px!important;color:#725f55!important}
+.member-legacy.member-list main>div.member-ranking-hero:first-child>p{color:#f3deda!important}
+.member-legacy .member-ranking-hero>div:first-child svg{color:#f4d8b6!important}
+.member-legacy .member-rank-position span,.member-legacy .member-rank-position svg{color:#fff9f0!important}
+.member-legacy main .rounded-3xl,.member-legacy main .rounded-2xl{border-radius:8px!important;box-shadow:none!important}
+.member-legacy main .bg-\[\#0d0708\]{background:#fffaf3!important}
+.member-legacy main .bg-\[\#150c0e\]{background:#e9dfd1!important}
+.member-legacy main button,.member-legacy main a{min-height:44px}
+.member-legacy main button:focus-visible,.member-legacy main a:focus-visible{outline:2px solid #54262d!important;outline-offset:3px}
+.member-legacy main .bg-gradient-to-br,.member-legacy main .bg-gradient-to-r{background:#54262d!important;color:#fff9f0!important}
+.member-legacy .member-page-heading{margin:12px 0 35px}
+.member-legacy .member-page-heading h1{font-size:clamp(49px,5vw,70px);font-weight:400;line-height:1;margin:0}
+.member-legacy .member-page-heading p{font-size:14px;line-height:1.7;color:#725f55;max-width:650px;margin:15px 0 0}
+.member-legacy .member-prize-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.member-legacy .member-prize{padding:25px!important;background:#fffaf3!important;border:1px solid #d7c9bb!important;border-radius:8px!important;min-height:238px}
+.member-legacy .member-prize h3{font-size:30px!important;font-weight:400!important;line-height:1.1;margin-top:13px}
+.member-legacy .member-prize p{font-size:13px!important;line-height:1.6}
+.member-legacy .member-prize button{border-radius:0!important;padding:10px 15px!important}
+.member-legacy .member-prize:hover{border-color:#9f7b79!important}
+.member-legacy .member-prize a,.member-legacy .member-prize button{font-size:13px!important}
+.member-legacy.member-list main>div.space-y-6{gap:28px}
+.member-legacy.member-list main .text-2xl.font-serif{font-size:clamp(43px,5vw,60px)!important;font-weight:400!important}
+.member-legacy.member-flow main .text-2xl.font-serif{font-size:42px!important;font-weight:400!important}
+.member-legacy.member-flow main .text-xl.font-serif{font-size:33px!important;font-weight:400!important}
+.member-legacy.member-flow main .text-xs{font-size:12px}
+.member-legacy.member-flow main .text-\[10px\]{font-size:11px}
+@media(max-width:700px){.member-legacy header>div{padding:12px 18px!important;min-height:61px}.member-legacy main{padding:33px 18px 105px!important}.member-legacy .member-prize-grid{grid-template-columns:1fr}.member-legacy .member-prize{min-height:0}.member-legacy .member-page-heading{margin:8px 0 27px}.member-legacy .member-page-heading h1{font-size:51px}}
+.member-legacy :is([class~="bg-[#050304]"], [class~="bg-[#0d0708]"], [class~="bg-stone-900"], [class~="bg-bistro-card"]) {background:#fffaf3!important}
+.member-legacy [class~="bg-[#150c0e]"] {background:#e9dfd1!important}
+.member-legacy :is([class~="text-white"], [class~="text-stone-100"], [class~="text-stone-200"], [class~="text-stone-300"], [class~="text-[#f5ede6]"], [class~="text-champagne-warm"]) {color:#352b2b!important}
+.member-legacy :is([class~="text-stone-400"], [class~="text-stone-500"], [class~="text-stone-600"], [class~="text-champagne-muted"]) {color:#725f55!important}
+.member-legacy :is([class~="text-[#ce7281]"], [class~="text-[#d4aa58]"], [class~="text-[#e18693]"]) {color:#54262d!important}
+.member-legacy :is([class~="border-stone-800"], [class~="border-stone-700"], [class~="border-[#5c131d]/30"], [class~="border-[#5c131d]/40"], [class~="border-[#5c131d]/50"]) {border-color:#d7c9bb!important}
+.member-legacy :is([class~="bg-[#5c131d]"], [class~="bg-wine-800"], [class~="bg-wine-700"]) {background:#54262d!important;color:#fff9f0!important}
+.member-legacy :is([class~="bg-[#5c131d]"], [class~="bg-wine-800"], [class~="bg-gradient-to-r"], [class~="bg-gradient-to-br"]) :is([class~="text-white"], [class~="text-stone-300"], [class~="text-[#e18693]"]) {color:#fff9f0!important}
+.member-legacy :is([class~="bg-[#5c131d]"], [class~="bg-wine-800"]) :is(svg,span) {color:inherit}
+.member-legacy [class~="bg-red-950/60"] {background:#f9e8e4!important}
+.member-legacy :is([class~="text-red-200"], [class~="text-red-300"], [class~="text-red-400"]) {color:#8b2d32!important}
+.member-legacy .member-prize [class~="text-emerald-400"] {color:#176447!important}
+.member-legacy :is([class~="bg-[#3a0b12]/60"], [class~="bg-[#3a0b12]/70"]) {background:#f9e8e4!important}
+.member-legacy :is(input,textarea,select) {background:#fffaf3!important;color:#352b2b!important;border-color:#b8a99c!important;min-height:44px}
+.member-legacy :is(input,textarea)::placeholder {color:#8b7e72!important}
+.member-legacy button {min-height:44px}
+.member-legacy :is([class~="shadow-lg"], [class~="shadow-xl"], [class~="shadow-2xl"]) {box-shadow:none!important}
+.member-legacy .member-survey-hero .member-survey-eyebrow,
+.member-legacy .member-survey-hero .member-survey-eyebrow svg,
+.member-legacy .member-survey-hero .member-survey-reward {color:#f2d9af!important}
+.member-legacy .member-canje-success-icon,
+.member-legacy .member-canje-success-badge {background:#e2f2e9!important;color:#176447!important;border-color:#9dcead!important}
+.member-legacy .member-canje-success-label {color:#176447!important}

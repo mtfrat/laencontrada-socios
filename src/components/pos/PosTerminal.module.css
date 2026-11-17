@@ -1,0 +1,78 @@
+.terminal { display: grid; gap: 20px; }
+
+.intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 178px;
+  padding: 28px 32px;
+  border: 1px solid #d7c9bb;
+  border-left: 4px solid #54262d;
+  border-radius: 9px;
+  background: #e9dfd1;
+}
+
+.introCopy { max-width: 690px; }
+.eyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: #69323a; font-size: 10px; font-weight: 700; letter-spacing: .12em; line-height: 1.5; }
+.liveDot { width: 7px; height: 7px; border-radius: 50%; background: #50775b; }
+.separator { margin: 0 3px; color: #a99082; }
+.title { margin-top: 11px; color: #54262d; font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(31px, 3.5vw, 43px); font-weight: 500; letter-spacing: -.035em; line-height: 1.02; }
+.description { max-width: 650px; margin-top: 9px; color: #65544c; font-size: 13px; line-height: 1.5; }
+
+.rule {
+  display: grid;
+  gap: 6px;
+  flex: none;
+  min-width: 164px;
+  padding: 15px 18px;
+  border: 1px solid #d4c4b5;
+  border-radius: 6px;
+  background: #fffaf3;
+  text-align: right;
+}
+.rule span { color: #795e53; font-size: 9px; font-weight: 700; letter-spacing: .1em; }
+.rule strong { color: #54262d; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.modeNav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid #d7c9bb;
+  border-radius: 8px;
+  background: #fffaf3;
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #69554d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.modeButton:hover { background: #f1e8dc; color: #54262d; }
+.modeButton:focus-visible { outline: 2px solid #54262d; outline-offset: 2px; }
+.modeActive, .modeActive:hover { border-color: #d9c4b9; background: #eee1d5; color: #54262d; }
+.modeNumber { color: #977a6f; font-size: 10px; font-variant-numeric: tabular-nums; }
+.modeActive .modeNumber { color: #54262d; }
+
+@media (max-width: 700px) {
+  .intro { display: block; min-height: 0; padding: 19px 21px; }
+  .turnLabel, .separator { display: none; }
+  .title { margin-top: 7px; font-size: 32px; }
+  .description { margin-top: 6px; }
+  .rule { display: flex; align-items: baseline; width: fit-content; min-width: 0; margin-top: 14px; padding: 9px 11px; text-align: left; }
+  .modeButton { flex-direction: column; gap: 4px; min-height: 66px; padding: 7px 5px; font-size: 10px; }
+  .modeNumber { display: none; }
+}

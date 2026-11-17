@@ -19,15 +19,20 @@ describe("calculateTablePoints", () => {
     });
   });
 
-  it("redondea el promedio a 2 decimales antes de dividir", () => {
+  it("usa siempre los 4 comensales como divisor aunque haya 1 o 2 socios", () => {
+    const result = calculateTablePoints({ totalTicket: 200000, guestCount: 4, pesosPorPunto: 1000 });
+    expect(result).toEqual({ gastoPromedioPorPersona: 50000, puntosPorSocio: 50 });
+  });
+
+  it("no redondea hacia arriba para otorgar un punto inexistente", () => {
     const result = calculateTablePoints({
       totalTicket: 2999.99,
       guestCount: 3,
       pesosPorPunto: 1000,
     });
 
-    expect(result.gastoPromedioPorPersona).toBe(1000);
-    expect(result.puntosPorSocio).toBe(1);
+    expect(result.gastoPromedioPorPersona).toBe(999.99);
+    expect(result.puntosPorSocio).toBe(0);
   });
 
   it("usa floor: un promedio bajo el ratio no aporta puntos", () => {

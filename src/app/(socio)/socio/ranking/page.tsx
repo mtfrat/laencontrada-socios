@@ -19,7 +19,6 @@ export default async function SocioRankingPage() {
       id: true,
       nombre: true,
       apellido: true,
-      numeroSocio: true,
       puntosHistoricos: true,
       puntosActuales: true,
     },
@@ -47,7 +46,7 @@ export default async function SocioRankingPage() {
   const top3 = topSocios.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
+    <div className="member-legacy member-list min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Header */}
       <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
         <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between">
@@ -76,7 +75,7 @@ export default async function SocioRankingPage() {
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 pt-5 space-y-6">
         {/* Banner Gamificación */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5c131d] via-[#3a0b12] to-[#0d0406] text-white p-6 shadow-2xl border border-[#5c131d]/50 text-center">
+        <div className="member-ranking-hero relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5c131d] via-[#3a0b12] to-[#0d0406] text-white p-6 shadow-2xl border border-[#5c131d]/50 text-center">
           <div className="w-12 h-12 rounded-2xl bg-white/10 text-[#d4aa58] border border-white/15 flex items-center justify-center mx-auto mb-3 shadow-inner">
             <Trophy className="w-6 h-6" />
           </div>
@@ -87,7 +86,7 @@ export default async function SocioRankingPage() {
             Los comensales más habituales y apasionados de La Encontrada.
           </p>
 
-          <div className="mt-4 inline-flex items-center gap-2 bg-black/50 border border-[#5c131d]/60 px-4 py-1.5 rounded-full text-xs font-medium">
+          <div className="member-rank-position mt-4 inline-flex items-center gap-2 bg-black/50 border border-[#5c131d]/60 px-4 py-1.5 rounded-full text-xs font-medium">
             <Sparkles className="w-3.5 h-3.5 text-[#d4aa58]" />
             <span className="text-stone-300">Tu posición actual:</span>
             <span className="font-mono font-bold text-[#d4aa58]">Puesto #{miPuesto}</span>
@@ -202,9 +201,6 @@ export default async function SocioRankingPage() {
                           </span>
                         )}
                       </p>
-                      <span className="text-[10px] text-stone-500 font-mono">
-                        Socio {s.numeroSocio}
-                      </span>
                     </div>
                   </div>
 

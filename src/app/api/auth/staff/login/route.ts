@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createStaffSession } from "@/lib/auth";
-import { getClientIp, staffLoginIpLimiter } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/rate-limit";
+import { hitPersistentRateLimit } from "@/lib/persistent-rate-limit";
+import { readJsonBody } from "@/lib/validation";
 
 const RATE_LIMIT_ERROR =
   "Demasiados intentos de ingreso. Esperá unos minutos y volvé a intentar.";
@@ -16,14 +18,16 @@ function rateLimitedResponse(retryAfterSeconds: number) {
 }
 
 export async function POST(request: Request) {
-  const ipDecision = staffLoginIpLimiter.hit(`ip:${getClientIp(request)}`);
-  if (!ipDecision.allowed) {
-    return rateLimitedResponse(ipDecision.retryAfterSeconds);
-  }
-
   try {
-    const body = await request.json();
-    const { username, password } = body;
+    const ipDecision = await hitPersistentRateLimit("staff-ip", getClientIp(request), 10, 15 * 60 * 1000);
+    if (!ipDecision.allowed) return rateLimitedResponse(ipDecision.retryAfterSeconds);
+
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
+    const { username, password } = bodyParsed.data as {
+      username?: unknown;
+      password?: unknown;
+    };
 
     if (!username || !password) {
       return NextResponse.json(
@@ -37,9 +41,14 @@ export async function POST(request: Request) {
     }
 
     const cleanUsername = String(username).trim().toLowerCase();
+    if (cleanUsername.length > 254) {
+      return NextResponse.json({ success: false, code: "INVALID_CREDENTIALS", error: "Credenciales inválidas." }, { status: 401 });
+    }
+    const accountDecision = await hitPersistentRateLimit("staff-account", cleanUsername, 20, 15 * 60 * 1000);
+    if (!accountDecision.allowed) return rateLimitedResponse(accountDecision.retryAfterSeconds);
 
     const user = await prisma.usuario.findUnique({
-      where: { username: cleanUsername },
+      where: cleanUsername.includes("@") ? { email: cleanUsername } : { username: cleanUsername },
     });
 
     if (!user) {
@@ -86,7 +95,7 @@ export async function POST(request: Request) {
       role: user.role,
     });
 
-    const redirectUrl = user.role === "ADMIN" ? "/admin" : "/pos";
+    const redirectUrl = user.role === "SUPER_ADMIN" ? "/admin" : "/pos";
 
     return NextResponse.json({
       success: true,

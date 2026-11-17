@@ -13,7 +13,7 @@ export default async function SocioHistorialPage() {
   }
 
   // Traer historial completo de transacciones y visitas del socio
-  const [transacciones, visitas] = await Promise.all([
+  const [transacciones, visitas, config] = await Promise.all([
     prisma.transaccionPuntos.findMany({
       where: { socioId: session.id },
       orderBy: { createdAt: "desc" },
@@ -26,10 +26,15 @@ export default async function SocioHistorialPage() {
       },
       orderBy: { fechaVisita: "desc" },
     }),
+    prisma.configuracionPuntos.findFirst({
+      select: { encuestaActiva: true, encuestaUnaVezPorSocio: true },
+    }),
   ]);
+  const encuestaDisponible = config?.encuestaActiva !== false &&
+    (!config?.encuestaUnaVezPorSocio || !visitas.some((visita) => visita.respuestaEncuesta));
 
   return (
-    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
+    <div className="member-legacy member-list min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Header */}
       <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
         <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between">
@@ -79,7 +84,7 @@ export default async function SocioHistorialPage() {
             </div>
           ) : (
             visitas.map((v) => {
-              const pendienteEncuesta = !v.respuestaEncuesta;
+              const pendienteEncuesta = encuestaDisponible && !v.respuestaEncuesta;
               return (
                 <div
                   key={v.id}
@@ -158,6 +163,7 @@ export default async function SocioHistorialPage() {
             Movimientos de la Cuenta
           </h2>
 
+          {transacciones.length === 0 && <p className="py-4 text-xs text-stone-400">Todavía no hay movimientos de puntos.</p>}
           <div className="divide-y divide-stone-800/60">
             {transacciones.map((tx) => (
               <div key={tx.id} className="py-3 flex items-center justify-between text-xs">

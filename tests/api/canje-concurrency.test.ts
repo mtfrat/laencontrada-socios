@@ -54,6 +54,7 @@ function staffRow(): Row {
     nombre: "Mozo Luis",
     role: "MOZO",
     passwordHash: "hash",
+    activo: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

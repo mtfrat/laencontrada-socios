@@ -1,25 +1,24 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./marfil-app.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://laencontradawinebistro.com"),
-  title: "La Encontrada Wine Bistro | Alta Cocina & Cava en El Bolsón, Patagonia",
+  title: "La Encontrada Wine Bistro | Cocina patagónica y vinos en El Bolsón",
   description:
-    "Restaurante gourmet y wine bistro en Callejón Cerro Amigo, El Bolsón, Río Negro. Calificación 4.9★ en Google Maps. Cocina de autor patagónica, cordero braseado, trucha andina y selecta cava de vinos.",
+    "En Callejón Cerro Amigo, El Bolsón, una carta de temporada inspirada en productos regionales y vinos de la Comarca Andina. Consultá la carta actual y reservá por WhatsApp.",
   keywords: [
-    "restaurante gourmet en El Bolsón",
-    "wine bistro Patagonia",
-    "alta cocina Río Negro",
+    "restaurante en El Bolsón",
     "La Encontrada Wine Bistro",
-    "donde comer en El Bolsón",
+    "cocina patagónica",
+    "vinos de la Comarca Andina",
     "restaurante Callejón Cerro Amigo",
-    "maridaje vinos Patagonia",
   ],
   authors: [{ name: "La Encontrada Wine Bistro" }],
   openGraph: {
-    title: "La Encontrada Wine Bistro | Alta Cocina & Cava en El Bolsón",
+    title: "La Encontrada Wine Bistro | Cocina patagónica y vinos en El Bolsón",
     description:
-      "Experiencia gastronómica de excelencia en la Patagonia. 4.9★ en Google Maps. Cava seleccionada y cocina andina de autor.",
+      "Cocina regional de temporada y vinos de la Comarca Andina en Callejón Cerro Amigo, El Bolsón. Consultá la carta y reservá tu mesa.",
     url: "https://laencontradawinebistro.com",
     siteName: "La Encontrada Wine Bistro",
     images: [
@@ -45,7 +44,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#5c131d",
+  themeColor: "#f5f0e7",
 };
 
 export default function RootLayout({
@@ -74,12 +73,6 @@ export default function RootLayout({
       longitude: -71.5215975,
     },
     servesCuisine: ["Patagónica", "Gourmet", "Wine Bar", "Bistró"],
-    priceRange: "$$$",
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "250",
-    },
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",
@@ -111,14 +104,14 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="es" className="dark scroll-smooth">
+    <html lang="es" className="scroll-smooth" data-scroll-behavior="smooth">
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased min-h-screen bg-[#010101] text-white selection:bg-[#5c131d] selection:text-white">
+      <body className="antialiased min-h-screen">
         {children}
       </body>
     </html>

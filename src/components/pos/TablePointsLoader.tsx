@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { calculateTablePoints } from "@/lib/points-engine";
+import Dialog from "@/components/ui/Dialog";
 import {
   Calculator,
-  Users,
   Search,
   Plus,
   X,
@@ -16,6 +16,7 @@ import {
   UserPlus,
   Phone,
   Mail,
+  FileText,
 } from "lucide-react";
 
 interface SocioItem {
@@ -34,6 +35,7 @@ interface TablePointsLoaderProps {
 export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsLoaderProps) {
   // Estado de la mesa
   const [totalTicket, setTotalTicket] = useState<string>("");
+  const [numeroFactura, setNumeroFactura] = useState("");
   const [comensales, setComensales] = useState<number>(2);
   const [selectedSocios, setSelectedSocios] = useState<SocioItem[]>([]);
   const [notas, setNotas] = useState<string>("");
@@ -42,6 +44,20 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SocioItem[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [completedQuery, setCompletedQuery] = useState("");
+  const visibleSearchResults = useMemo(() => {
+    const selectedIds = new Set(selectedSocios.map((socio) => socio.id));
+    return searchResults.filter((socio) => !selectedIds.has(socio.id));
+  }, [searchResults, selectedSocios]);
+
+  const updateSearchQuery = (value: string) => {
+    setSearchQuery(value);
+    setSearchResults([]);
+    setSearchError(null);
+    setCompletedQuery("");
+    setSearching(value.trim().length >= 2);
+  };
 
   // Modal Alta Rápida de Socio
   const [altaModalOpen, setAltaModalOpen] = useState(false);
@@ -55,8 +71,10 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
   // Estado de envío
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<{
+    numeroFactura: string;
     puntosPorSocio: number;
     gastoPromedioPorPersona: number;
     sociosAcreditados: Array<{ id: string; nombre: string; dni: string; puntosActuales: number }>;
@@ -86,40 +104,38 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
   // Búsqueda en vivo de socios
   useEffect(() => {
     const query = searchQuery.trim();
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
+    if (query.length < 2) return;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setSearching(true);
       try {
-        const res = await fetch(`/api/socios/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/socios/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
         const data = await res.json();
-        if (data.success) {
-          // Filtrar los que ya están seleccionados
-          const selectedIds = new Set(selectedSocios.map((s) => s.id));
-          setSearchResults(data.socios.filter((s: SocioItem) => !selectedIds.has(s.id)));
+        if (controller.signal.aborted) return;
+        if (res.ok && data.success) {
+          setSearchResults(data.socios);
+          setCompletedQuery(query);
+        } else {
+          setSearchError(data.error || "No pudimos buscar socios. Volvé a intentar.");
         }
       } catch {
-        // Silencioso
+        if (!controller.signal.aborted) setSearchError("No se pudo conectar. Revisá la conexión y volvé a buscar.");
       } finally {
-        setSearching(false);
+        if (!controller.signal.aborted) setSearching(false);
       }
     }, 250);
 
-    return () => clearTimeout(timer);
-  }, [searchQuery, selectedSocios]);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [searchQuery]);
 
   const addSocio = (socio: SocioItem) => {
+    if (selectedSocios.some((selected) => selected.id === socio.id)) return;
     if (selectedSocios.length >= comensales) {
       setError(`No puedes agregar más socios (${selectedSocios.length + 1}) que comensales (${comensales}).`);
       return;
     }
     setError(null);
     setSelectedSocios((prev) => [...prev, socio]);
-    setSearchQuery("");
-    setSearchResults([]);
+    updateSearchQuery("");
   };
 
   const removeSocio = (id: string) => {
@@ -127,6 +143,10 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
   };
 
   const openAltaModal = (prefill?: string) => {
+    if (selectedSocios.length >= comensales) {
+      setError("La mesa ya tiene todos sus comensales asociados. Aumentá la cantidad antes de registrar otro socio.");
+      return;
+    }
     setAltaError(null);
     const text = (prefill || "").trim();
     if (text) {
@@ -152,8 +172,8 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
     setAltaError(null);
 
     const cleanDni = altaDni.replace(/\D/g, "").trim();
-    if (cleanDni.length < 5) {
-      setAltaError("El DNI debe tener al menos 5 dígitos numéricos.");
+    if (!/^\d{6,20}$/.test(cleanDni)) {
+      setAltaError("El DNI debe tener entre 6 y 20 dígitos numéricos.");
       return;
     }
 
@@ -186,8 +206,6 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
       // Agregar inmediatamente el socio a la mesa
       addSocio(data.socio);
       setAltaModalOpen(false);
-      setSearchQuery("");
-      setSearchResults([]);
     } catch {
       setAltaError("Error de comunicación con el servidor.");
     } finally {
@@ -195,21 +213,15 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
     }
   };
 
-  const addTestSocio = async () => {
-    try {
-      const res = await fetch(`/api/socios/search?q=12345678`);
-      const data = await res.json();
-      if (data.success && data.socios.length > 0) {
-        addSocio(data.socios[0]);
-      }
-    } catch {
-      // Silencioso
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError(null);
+
+    if (!/^\d{4}-\d{8}$/.test(numeroFactura) || numeroFactura === "0000-00000000") {
+      setError("Ingresá el número completo de la factura, por ejemplo 0001-00001362.");
+      return;
+    }
 
     const monto = parseFloat(totalTicket) || 0;
     if (monto <= 0) {
@@ -227,6 +239,12 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
       return;
     }
 
+    if (puntosCalculados < 1) {
+      setError("El consumo por persona no alcanza para sumar un punto con la regla actual.");
+      return;
+    }
+
+    submittingRef.current = true;
     setSubmitting(true);
 
     try {
@@ -234,6 +252,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          numeroFactura,
           montoTotalTicket: monto,
           cantidadComensales: comensales,
           sociosIds: selectedSocios.map((s) => s.id),
@@ -245,24 +264,26 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
       if (!res.ok || !data.success) {
         setError(data.error || "No se pudieron acreditar los puntos.");
-        setSubmitting(false);
         return;
       }
 
       setSuccessData({
+        numeroFactura,
         puntosPorSocio: data.data.puntosPorSocio,
         gastoPromedioPorPersona: data.data.gastoPromedioPorPersona,
         sociosAcreditados: data.data.sociosAcreditados,
       });
-      setSubmitting(false);
     } catch {
       setError("Error de red al conectar con el servidor.");
+    } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
   const resetForm = () => {
     setTotalTicket("");
+    setNumeroFactura("");
     setComensales(2);
     setSelectedSocios([]);
     setNotas("");
@@ -284,6 +305,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
         <p className="text-stone-300 text-sm">
           La mesa fue registrada y los puntos se encuentran disponibles en la cuenta del cliente.
         </p>
+        <p className="text-xs text-stone-400">Factura {successData.numeroFactura} acreditada una sola vez.</p>
 
         {/* Resumen numérico */}
         <div className="grid grid-cols-2 gap-3 my-6 max-w-sm mx-auto">
@@ -339,9 +361,12 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
             <Calculator className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Carga de Mesa y Puntos</h2>
+            <h2 className="text-lg font-bold text-white">Puntos por consumo en mesa</h2>
             <p className="text-xs text-stone-400">
               Ratio activo: ${pesosPorPunto.toLocaleString("es-AR")} = 1 punto
+            </p>
+            <p className="text-xs text-stone-400 mt-1 max-w-md">
+              El total se divide entre todos los comensales. Cada socio seleccionado recibe los puntos calculados.
             </p>
           </div>
         </div>
@@ -355,16 +380,41 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="rounded-2xl border border-[#5c131d]/35 bg-[#150c0e] p-4 sm:p-5">
+          <label htmlFor="table-invoice" className="block text-xs font-semibold uppercase tracking-wider text-stone-300 mb-2">
+            Número de factura del ticket
+          </label>
+          <div className="relative max-w-md">
+            <FileText className="w-5 h-5 text-stone-500 absolute left-3.5 top-3.5" aria-hidden="true" />
+            <input
+              id="table-invoice"
+              type="text"
+              inputMode="numeric"
+              maxLength={13}
+              placeholder="0001-00001362"
+              value={numeroFactura}
+              onChange={(event) => {
+                const digits = event.target.value.replace(/\D/g, "").slice(0, 12);
+                setNumeroFactura(digits.length > 4 ? `${digits.slice(0, 4)}-${digits.slice(4)}` : digits);
+              }}
+              aria-describedby="table-invoice-help"
+              required
+              className="w-full pl-10 pr-4 py-3 bg-[#050304] border border-stone-800 rounded-xl text-base font-mono text-white placeholder:text-stone-600 focus:outline-none focus:border-[#5c131d] focus:ring-1 focus:ring-[#5c131d] transition"
+            />
+          </div>
+          <p id="table-invoice-help" className="text-xs text-stone-400 mt-2">Usá el número fiscal que figura en MaxiRest. Cada factura puede sumar puntos una sola vez, también si luego aparece en un cierre PDF.</p>
+        </div>
         {/* PASO 1 & 2: Monto y Comensales */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Monto del ticket */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-stone-300 mb-2">
+            <label htmlFor="table-total" className="block text-xs font-semibold uppercase tracking-wider text-stone-300 mb-2">
               1. Monto Total del Ticket ($)
             </label>
             <div className="relative">
               <DollarSign className="w-5 h-5 text-stone-500 absolute left-3.5 top-3.5" />
               <input
+                id="table-total"
                 type="number"
                 inputMode="numeric"
                 min="1"
@@ -399,7 +449,9 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setComensales((c) => Math.max(1, c - 1))}
+                onClick={() => setComensales((c) => Math.max(1, selectedSocios.length, c - 1))}
+                aria-label="Quitar un comensal"
+                disabled={comensales <= Math.max(1, selectedSocios.length)}
                 className="w-12 h-12 rounded-2xl bg-[#150c0e] hover:bg-[#5c131d]/40 text-stone-200 border border-stone-800 hover:border-[#5c131d]/40 flex items-center justify-center font-bold text-lg transition"
               >
                 -
@@ -411,6 +463,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <button
                 type="button"
                 onClick={() => setComensales((c) => c + 1)}
+                aria-label="Agregar un comensal"
                 className="w-12 h-12 rounded-2xl bg-[#150c0e] hover:bg-[#5c131d]/40 text-stone-200 border border-stone-800 hover:border-[#5c131d]/40 flex items-center justify-center font-bold text-lg transition"
               >
                 +
@@ -424,7 +477,10 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                   key={num}
                   type="button"
                   onClick={() => setComensales(num)}
-                  className={`flex-1 text-[11px] font-mono py-1 rounded-lg border transition ${
+                  disabled={num < selectedSocios.length}
+                  aria-pressed={comensales === num}
+                  aria-label={`${num} comensales`}
+                  className={`flex-1 min-h-11 text-sm font-mono py-1 rounded-lg border transition disabled:opacity-40 ${
                     comensales === num
                       ? "bg-[#5c131d] text-white border-[#7a1a27] font-bold shadow-md"
                       : "bg-[#150c0e] text-stone-400 hover:text-white border-stone-800"
@@ -470,13 +526,6 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>+ Registrar Nuevo Socio</span>
               </button>
-              <button
-                type="button"
-                onClick={addTestSocio}
-                className="text-[11px] text-stone-500 hover:text-[#d4aa58] hover:underline hidden md:inline-block"
-              >
-                + Demo (12345678)
-              </button>
             </div>
           </div>
 
@@ -495,7 +544,8 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                   <button
                     type="button"
                     onClick={() => removeSocio(socio.id)}
-                    className="w-5 h-5 rounded-lg bg-stone-900 hover:bg-red-900/60 text-stone-400 hover:text-red-300 flex items-center justify-center transition"
+                    aria-label={`Quitar a ${socio.nombre} de la mesa`}
+                    className="w-11 h-11 rounded-lg bg-stone-900 hover:bg-red-900/60 text-stone-400 hover:text-red-300 flex items-center justify-center transition"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -508,10 +558,11 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
           <div className="relative">
             <Search className="w-4 h-4 text-stone-500 absolute left-3.5 top-3.5" />
             <input
+              aria-label="Buscar socio por DNI o nombre"
               type="text"
               placeholder="Buscar por DNI o Nombre de socio..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => updateSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-[#050304] border border-stone-800 rounded-xl text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-[#5c131d] transition"
             />
             {searching && (
@@ -519,9 +570,9 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
             )}
 
             {/* Dropdown de resultados */}
-            {searchResults.length > 0 && (
+            {visibleSearchResults.length > 0 && (
               <div className="absolute z-20 left-0 right-0 mt-1.5 bg-[#0d0708] border border-stone-800 rounded-2xl shadow-2xl overflow-hidden divide-y divide-stone-800/80">
-                {searchResults.map((s) => (
+                {visibleSearchResults.map((s) => (
                   <button
                     key={s.id}
                     type="button"
@@ -549,7 +600,8 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
           </div>
 
           {/* Sugerencia de alta cuando no se encuentra el socio buscado */}
-          {searchQuery.trim().length >= 3 && !searching && searchResults.length === 0 && (
+          {searchError && <p role="alert" className="mt-3 text-sm text-red-300">{searchError}</p>}
+          {searchQuery.trim().length >= 2 && completedQuery === searchQuery.trim() && !searching && !searchError && visibleSearchResults.length === 0 && (
             <div className="mt-2.5 p-3.5 bg-[#150c0e] border border-[#5c131d]/35 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <div className="text-stone-300 text-center sm:text-left">
                 <span className="font-bold text-white flex items-center gap-1.5 justify-center sm:justify-start">
@@ -574,10 +626,11 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
         {/* Notas adicionales opcionales */}
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1.5">
+          <label htmlFor="table-notes" className="block text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1.5">
             Notas de la comanda / Mesa (Opcional)
           </label>
           <input
+            id="table-notes"
             type="text"
             placeholder="Ej: Mesa 12 - Cumpleaños"
             value={notas}
@@ -589,7 +642,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
         {/* Botón de Confirmación Principal */}
         <button
           type="submit"
-          disabled={submitting || selectedSocios.length === 0 || !totalTicket}
+          disabled={submitting || selectedSocios.length === 0 || !totalTicket || puntosCalculados < 1}
           className="w-full py-4 px-6 bg-[#5c131d] hover:bg-[#7a1a27] disabled:bg-stone-900 disabled:text-stone-600 text-white font-bold text-base rounded-2xl shadow-xl transition flex items-center justify-center gap-2"
         >
           {submitting ? (
@@ -608,7 +661,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
       {/* MODAL ALTA RÁPIDA DE SOCIO EN SALÓN */}
       {altaModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <Dialog open={altaModalOpen} onClose={() => setAltaModalOpen(false)} labelledBy="alta-title" busy={altaSubmitting} className="max-w-md">
           <div className="bg-[#0d0708] border border-[#5c131d]/50 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-stone-800/80 pb-3">
               <div className="flex items-center gap-2.5">
@@ -616,7 +669,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Alta Rápida de Socio</h3>
+                  <h3 id="alta-title" className="text-base font-bold text-white">Alta Rápida de Socio</h3>
                   <p className="text-[11px] text-stone-400">
                     Se sumará automáticamente a la mesa en curso
                   </p>
@@ -625,6 +678,8 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <button
                 type="button"
                 onClick={() => setAltaModalOpen(false)}
+                aria-label="Cerrar alta de socio"
+                disabled={altaSubmitting}
                 className="text-stone-400 hover:text-white p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -632,7 +687,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
             </div>
 
             {altaError && (
-              <div className="p-3 bg-red-950/60 border border-red-800 text-red-200 text-xs rounded-xl flex items-center gap-2">
+              <div role="alert" className="p-3 bg-red-950/60 border border-red-800 text-red-200 text-xs rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
                 <span>{altaError}</span>
               </div>
@@ -642,11 +697,12 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* DNI */}
                 <div>
-                  <label className="block font-semibold text-stone-300 mb-1">
+                  <label htmlFor="alta-dni" className="block font-semibold text-stone-300 mb-1">
                     DNI *
                   </label>
                   <input
                     type="text"
+                    id="alta-dni"
                     inputMode="numeric"
                     required
                     autoFocus
@@ -659,12 +715,14 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
                 {/* Teléfono */}
                 <div>
-                  <label className="block font-semibold text-stone-300 mb-1 flex items-center gap-1">
+                  <label htmlFor="alta-phone" className="block font-semibold text-stone-300 mb-1 flex items-center gap-1">
                     <Phone className="w-3 h-3 text-[#ce7281]" />
                     <span>WhatsApp (Opcional)</span>
                   </label>
                   <input
                     type="tel"
+                    id="alta-phone"
+                    autoComplete="tel"
                     placeholder="Ej: 2914123456"
                     value={altaTelefono}
                     onChange={(e) => setAltaTelefono(e.target.value)}
@@ -676,11 +734,13 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Nombre */}
                 <div>
-                  <label className="block font-semibold text-stone-300 mb-1">
+                  <label htmlFor="alta-name" className="block font-semibold text-stone-300 mb-1">
                     Nombre *
                   </label>
                   <input
                     type="text"
+                    id="alta-name"
+                    autoComplete="given-name"
                     required
                     placeholder="Ej: Carolina"
                     value={altaNombre}
@@ -691,11 +751,13 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
                 {/* Apellido */}
                 <div>
-                  <label className="block font-semibold text-stone-300 mb-1">
+                  <label htmlFor="alta-surname" className="block font-semibold text-stone-300 mb-1">
                     Apellido (Opcional)
                   </label>
                   <input
                     type="text"
+                    id="alta-surname"
+                    autoComplete="family-name"
                     placeholder="Ej: Gómez"
                     value={altaApellido}
                     onChange={(e) => setAltaApellido(e.target.value)}
@@ -706,12 +768,14 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
 
               {/* Email */}
               <div>
-                <label className="block font-semibold text-stone-300 mb-1 flex items-center gap-1">
+                <label htmlFor="alta-email" className="block font-semibold text-stone-300 mb-1 flex items-center gap-1">
                   <Mail className="w-3 h-3 text-[#ce7281]" />
                   <span>Email (Opcional)</span>
                 </label>
                 <input
                   type="email"
+                  id="alta-email"
+                  autoComplete="email"
                   placeholder="ejemplo@email.com"
                   value={altaEmail}
                   onChange={(e) => setAltaEmail(e.target.value)}
@@ -750,7 +814,7 @@ export default function TablePointsLoader({ pesosPorPunto = 1000 }: TablePointsL
               </div>
             </form>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

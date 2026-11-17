@@ -3,6 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const cookieJar = vi.hoisted(() => new Map<string, string>());
 const findUniqueMock = vi.hoisted(() => vi.fn());
 const compareMock = vi.hoisted(() => vi.fn());
+const rateCounts = vi.hoisted(() => new Map<string, number>());
+
+vi.mock("@/lib/persistent-rate-limit", () => ({
+  hitPersistentRateLimit: async (scope: string, identifier: string, limit: number) => {
+    const key = `${scope}:${identifier}`;
+    const count = (rateCounts.get(key) ?? 0) + 1;
+    rateCounts.set(key, count);
+    return { allowed: count <= limit, retryAfterSeconds: count <= limit ? 0 : 60 };
+  },
+}));
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -34,7 +44,6 @@ vi.mock("bcryptjs", () => ({
 }));
 
 import { POST } from "@/app/api/auth/staff/login/route";
-import { staffLoginIpLimiter } from "@/lib/rate-limit";
 
 const STAFF_COOKIE = "laencontrada_staff_token";
 
@@ -42,7 +51,7 @@ const usuarioAdmin = {
   id: "user-1",
   username: "ana",
   nombre: "Ana",
-  role: "ADMIN",
+  role: "SUPER_ADMIN",
   passwordHash: "$2b$10$abcdefghijklmnopqrstuv",
   activo: true,
 };
@@ -57,7 +66,7 @@ function loginRequest(body: unknown, ip = "203.0.113.20"): Request {
 
 beforeEach(() => {
   cookieJar.clear();
-  staffLoginIpLimiter.reset();
+  rateCounts.clear();
   findUniqueMock.mockReset();
   findUniqueMock.mockResolvedValue(null);
   compareMock.mockReset();
@@ -121,7 +130,7 @@ describe("POST /api/auth/staff/login — resultados", () => {
     expect(cookieJar.has(STAFF_COOKIE)).toBe(false);
   });
 
-  it("crea la sesión y redirige a /admin para ADMIN", async () => {
+  it("crea la sesión y redirige a /admin para el administrador", async () => {
     findUniqueMock.mockResolvedValue(usuarioAdmin);
     compareMock.mockResolvedValue(true);
 
@@ -132,7 +141,7 @@ describe("POST /api/auth/staff/login — resultados", () => {
 
     expect(res.status).toBe(200);
     expect(data).toMatchObject({ success: true, redirectTo: "/admin" });
-    expect(data.user).toMatchObject({ username: "ana", role: "ADMIN" });
+    expect(data.user).toMatchObject({ username: "ana", role: "SUPER_ADMIN" });
     expect(compareMock).toHaveBeenCalledWith("buena", usuarioAdmin.passwordHash);
 
     const token = cookieJar.get(STAFF_COOKIE);
@@ -153,6 +162,13 @@ describe("POST /api/auth/staff/login — resultados", () => {
     expect(data).toMatchObject({ success: true, redirectTo: "/pos" });
   });
 
+  it("redirige a superadministradores al panel de gestión", async () => {
+    findUniqueMock.mockResolvedValue({ ...usuarioAdmin, role: "SUPER_ADMIN" });
+    compareMock.mockResolvedValue(true);
+    const res = await POST(loginRequest({ username: "ana", password: "buena" }));
+    expect((await res.json()).redirectTo).toBe("/admin");
+  });
+
   it("normaliza el username a minúsculas", async () => {
     findUniqueMock.mockResolvedValue(usuarioAdmin);
     compareMock.mockResolvedValue(true);
@@ -162,6 +178,14 @@ describe("POST /api/auth/staff/login — resultados", () => {
     expect(findUniqueMock).toHaveBeenCalledWith(
       expect.objectContaining({ where: { username: "ana" } })
     );
+  });
+
+  it("permite iniciar sesión con email", async () => {
+    findUniqueMock.mockResolvedValue({ ...usuarioAdmin, email: "ana@ejemplo.com" });
+    compareMock.mockResolvedValue(true);
+    const res = await POST(loginRequest({ username: " ANA@EJEMPLO.COM ", password: "buena" }));
+    expect(res.status).toBe(200);
+    expect(findUniqueMock).toHaveBeenCalledWith(expect.objectContaining({ where: { email: "ana@ejemplo.com" } }));
   });
 
   it("devuelve 500 genérico sin filtrar detalles internos", async () => {
@@ -211,5 +235,15 @@ describe("POST /api/auth/staff/login — rate limiting", () => {
     expect(data).toMatchObject({ success: false, code: "RATE_LIMITED" });
     expect(blocked.headers.get("Retry-After")).toBeTruthy();
     expect(findUniqueMock).toHaveBeenCalledTimes(10);
+  });
+
+  it("bloquea intentos contra la misma cuenta aunque cambie la IP", async () => {
+    for (let i = 0; i < 20; i++) {
+      const response = await POST(loginRequest({ username: "admin", password: "x" }, `198.51.100.${i + 1}`));
+      expect(response.status).toBe(401);
+    }
+    const blocked = await POST(loginRequest({ username: "admin", password: "x" }, "198.51.100.50"));
+    expect(blocked.status).toBe(429);
+    expect(findUniqueMock).toHaveBeenCalledTimes(20);
   });
 });

@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Dialog from "@/components/ui/Dialog";
 import {
   Gift,
   ArrowLeft,
   Sparkles,
-  CheckCircle2,
   AlertCircle,
   Loader2,
   Lock,
@@ -52,6 +52,7 @@ export default function SocioPremiosPage() {
   const [socio, setSocio] = useState<SocioData | null>(null);
   const [premios, setPremios] = useState<PremioCatalogo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   // Modal confirmación
   const [premioSeleccionado, setPremioSeleccionado] = useState<PremioCatalogo | null>(null);
@@ -60,28 +61,31 @@ export default function SocioPremiosPage() {
 
   const fetchCatalogo = async () => {
     setLoading(true);
+    setCatalogError(null);
     try {
       const res = await fetch("/api/socio/premios");
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && data.success) {
         setSocio(data.socio);
         setPremios(data.premios);
       } else {
-        setErrorMessage(data.error || "No se pudo cargar el catálogo.");
+        setCatalogError(data.error || "No se pudo cargar el catálogo.");
       }
     } catch {
-      setErrorMessage("Error de conexión al cargar los premios.");
+      setCatalogError("No pudimos conectar para cargar los premios. Revisá tu conexión e intentá de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // El estado inicial ya muestra la carga; los datos se actualizan al responder la API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCatalogo();
   }, []);
 
   const handleConfirmarCanje = async () => {
-    if (!premioSeleccionado) return;
+    if (!premioSeleccionado || canjeando) return;
     setCanjeando(true);
     setErrorMessage(null);
     try {
@@ -111,7 +115,7 @@ export default function SocioPremiosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
+    <div className="member-legacy member-list min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Header */}
       <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -134,7 +138,7 @@ export default function SocioPremiosPage() {
                 <p className="text-[10px] uppercase font-mono tracking-widest text-[#ce7281] leading-none">
                   Catálogo
                 </p>
-                <h1 className="text-sm font-serif font-bold text-white">Premios & Recompensas</h1>
+                <p className="text-sm font-serif font-bold text-white">Canjeá tus puntos</p>
               </div>
             </div>
           </div>
@@ -154,6 +158,7 @@ export default function SocioPremiosPage() {
 
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        <div className="member-page-heading"><h1>Canjeá tus puntos.</h1><p>Elegí un producto para tu próxima visita. Consultá tu saldo y generá el cupón cuando estés en el restaurante.</p></div>
         {/* Banner si tiene un cupón activo pendiente */}
         {socio?.canjeActivo && (
           <div className="bg-gradient-to-r from-[#5c131d] via-[#7a1a27] to-[#3a0b12] text-white rounded-3xl p-4 shadow-xl border border-[#5c131d]/60 flex items-center justify-between">
@@ -179,7 +184,7 @@ export default function SocioPremiosPage() {
 
         {/* Error notification */}
         {errorMessage && (
-          <div className="bg-red-950/60 border border-red-800/80 text-red-200 p-3.5 rounded-2xl text-xs flex items-start gap-2">
+          <div role="alert" className="bg-red-950/60 border border-red-800/80 text-red-200 p-3.5 rounded-2xl text-xs flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <span>{errorMessage}</span>
@@ -196,6 +201,7 @@ export default function SocioPremiosPage() {
             </div>
             <button
               onClick={() => setErrorMessage(null)}
+              aria-label="Cerrar aviso"
               className="text-red-400 hover:text-white"
             >
               <X className="w-4 h-4" />
@@ -203,24 +209,17 @@ export default function SocioPremiosPage() {
           </div>
         )}
 
-        {/* Intro */}
-        <div className="bg-[#0d0708] rounded-2xl p-4 border border-[#5c131d]/30 shadow-lg flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#e18693] border border-[#5c131d]/40 flex items-center justify-center shrink-0">
-            <Gift className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-serif font-bold text-white">Recompensas Exclusivas</h2>
-            <p className="text-xs text-stone-400 leading-relaxed">
-              Selecciona tu premio para generar el cupón QR temporal y presentárselo a tu mozo en la mesa.
-            </p>
-          </div>
-        </div>
-
         {/* List of Prizes */}
         {loading ? (
           <div className="py-16 text-center text-stone-400 space-y-2">
             <Loader2 className="w-8 h-8 mx-auto animate-spin text-[#ce7281]" />
             <p className="text-xs">Cargando catálogo Wine Bistro...</p>
+          </div>
+        ) : catalogError ? (
+          <div role="alert" className="rounded-2xl border border-wine-700 bg-bistro-card p-6 space-y-4">
+            <h2 className="text-xl text-champagne-warm">No pudimos cargar tus premios</h2>
+            <p className="text-sm text-champagne-muted">{catalogError}</p>
+            <button onClick={fetchCatalogo} className="min-h-11 px-5 rounded-xl bg-wine-800 hover:bg-wine-700 text-sm text-white">Volver a intentar</button>
           </div>
         ) : premios.length === 0 ? (
           <div className="bg-[#0d0708] rounded-3xl p-8 border border-stone-800 text-center text-stone-400">
@@ -231,17 +230,18 @@ export default function SocioPremiosPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="member-prize-grid">
             {premios.map((p) => (
               <div
                 key={p.id}
-                className={`bg-[#0d0708] rounded-2xl p-4 border transition flex flex-col justify-between shadow-xl ${
+                className={`member-prize bg-[#0d0708] rounded-2xl p-4 border transition flex flex-col justify-between shadow-xl ${
                   p.puedeCanjear
                     ? "border-[#5c131d]/60 hover:border-[#5c131d]"
                     : "border-stone-800/80 opacity-80"
                 }`}
               >
                 <div>
+                  {p.imagenUrl && <div className="relative mb-4 h-44 overflow-hidden rounded-xl bg-stone-900"><Image src={p.imagenUrl} alt={p.titulo} fill unoptimized className="object-cover" /></div>}
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <span className="font-mono font-bold text-sm text-[#d4aa58] bg-[#d4aa58]/10 px-2.5 py-1 rounded-xl border border-[#d4aa58]/30">
                       {p.puntosRequeridos.toLocaleString("es-AR")} pts
@@ -272,16 +272,16 @@ export default function SocioPremiosPage() {
 
                 <div className="mt-4 pt-3 border-t border-stone-800/60 flex items-center justify-between">
                   <span className="text-[11px] text-stone-500">
-                    Stock disponible: {p.stock > 999 ? "Ilimitado" : `${p.stock} u.`}
+                    Stock disponible: {p.stock === -1 ? "Ilimitado" : `${p.stock} u.`}
                   </span>
 
                   <button
                     type="button"
-                    disabled={!p.puedeCanjear}
+                    disabled={!p.puedeCanjear || Boolean(socio?.canjeActivo)}
                     onClick={() => setPremioSeleccionado(p)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow disabled:opacity-40 disabled:cursor-not-allowed bg-[#5c131d] hover:bg-[#7a1a27] text-white"
+                    className="min-h-11 px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed bg-wine-800 hover:bg-wine-700 text-white"
                   >
-                    <span>Canjear</span>
+                    <span>{socio?.canjeActivo ? "Tenés un cupón activo" : "Canjear"}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -293,7 +293,7 @@ export default function SocioPremiosPage() {
 
       {/* MODAL DE CONFIRMACIÓN DE CANJE */}
       {premioSeleccionado && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <Dialog open={Boolean(premioSeleccionado)} onClose={() => setPremioSeleccionado(null)} labelledBy="confirm-canje-title" busy={canjeando} className="max-w-sm">
           <div className="bg-[#0d0708] border border-[#5c131d]/50 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#5c131d]/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -302,11 +302,12 @@ export default function SocioPremiosPage() {
                 <div className="w-8 h-8 rounded-xl bg-[#5c131d]/20 text-[#e18693] flex items-center justify-center">
                   <Gift className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-serif font-bold text-white">Confirmar Canje</h3>
+                <h3 id="confirm-canje-title" className="text-xl font-serif font-bold text-white">Confirmar canje</h3>
               </div>
               <button
                 type="button"
                 disabled={canjeando}
+                aria-label="Cerrar confirmación de canje"
                 onClick={() => setPremioSeleccionado(null)}
                 className="text-stone-400 hover:text-white p-1 rounded-lg"
               >
@@ -345,7 +346,7 @@ export default function SocioPremiosPage() {
               <div className="p-3 bg-stone-900/60 rounded-xl border border-stone-800 text-[11px] text-stone-400 flex items-start gap-2">
                 <Clock className="w-4 h-4 text-[#ce7281] shrink-0 mt-0.5" />
                 <span>
-                  Al confirmar, se generará un código QR con <strong>15 minutos</strong> de validez para que el mozo lo valide en tu mesa.
+                  Generá el cupón cuando estés en el restaurante. Verás su tiempo de validez junto al QR para presentárselo al equipo.
                 </span>
               </div>
             </div>
@@ -379,7 +380,7 @@ export default function SocioPremiosPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

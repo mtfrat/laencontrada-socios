@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/guards";
 import { ApiError, errorResponse } from "@/lib/api-error";
+import { codigoCanjeSchema, readJsonBody, validate } from "@/lib/validation";
 import { EstadoCanje, TipoTransaccion } from "@prisma/client";
 
 const includeCanje = {
@@ -29,19 +30,16 @@ export async function POST(request: Request) {
     if (!auth.ok) return auth.response;
     const session = auth.session;
 
-    const body = await request.json();
-    const { codigo } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
 
-    if (!codigo || typeof codigo !== "string" || !codigo.trim()) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "CODIGO_REQUERIDO",
-          error: "Ingresa el código del cupón o escanea el código QR.",
-        },
-        { status: 400 }
-      );
-    }
+    const codigoParsed = validate(
+      codigoCanjeSchema,
+      (bodyParsed.data as { codigo?: unknown } | null)?.codigo,
+      { code: "CODIGO_REQUERIDO", requiredCode: "CODIGO_REQUERIDO" }
+    );
+    if (!codigoParsed.ok) return codigoParsed.response;
+    const codigo = codigoParsed.data;
 
     const rawClean = codigo.trim().toUpperCase();
     const normalizedCode = rawClean.startsWith("CANJE-")
@@ -109,8 +107,7 @@ export async function POST(request: Request) {
         {
           success: false,
           code: "EXPIRADO",
-          error:
-            "El cupón ha expirado. Han transcurrido más de 15 minutos desde su emisión.",
+          error: "El cupón ha expirado. El socio puede generar uno nuevo desde su cuenta.",
         },
         { status: 400 }
       );
@@ -159,7 +156,7 @@ export async function POST(request: Request) {
         throw new ApiError(
           400,
           "EXPIRADO",
-          "El cupón ha expirado. Han transcurrido más de 15 minutos desde su emisión."
+          "El cupón ha expirado. El socio puede generar uno nuevo desde su cuenta."
         );
       }
 

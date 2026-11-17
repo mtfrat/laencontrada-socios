@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/guards";
+import { readJsonBody, validate } from "@/lib/validation";
 
 export async function GET() {
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     let config = await prisma.configuracionPuntos.findFirst();
 
@@ -49,29 +50,37 @@ export async function PUT(request: Request) {
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
-    const body = await request.json();
-    const { pesosPorPunto, minutosValidezQRCanje, puntosPorEncuesta, puntosPorReferido } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
 
-    const parsedPesos = parseFloat(pesosPorPunto);
-    if (isNaN(parsedPesos) || parsedPesos <= 0) {
-      return NextResponse.json(
-        { success: false, error: "El monto en pesos por punto debe ser mayor a 0." },
-        { status: 400 }
-      );
-    }
+    const campos = validate(
+      z.object({
+        pesosPorPunto: z.coerce
+          .number({ error: "El monto en pesos por punto debe ser mayor a 0." })
+          .positive("El monto en pesos por punto debe ser mayor a 0."),
+        minutosValidezQRCanje: z.coerce
+          .number({
+            error: "Los minutos de validez del QR deben estar entre 1 y 180 minutos.",
+          })
+          .int("Los minutos de validez del QR deben estar entre 1 y 180 minutos.")
+          .min(1, "Los minutos de validez del QR deben estar entre 1 y 180 minutos.")
+          .max(180, "Los minutos de validez del QR deben estar entre 1 y 180 minutos."),
+        puntosPorEncuesta: z.coerce.number().int().nullish(),
+        puntosPorReferido: z.coerce.number().int().nullish(),
+      }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const {
+      pesosPorPunto: parsedPesos,
+      minutosValidezQRCanje: parsedMinutos,
+      puntosPorEncuesta: rawEncuesta,
+      puntosPorReferido: rawReferido,
+    } = campos.data;
 
-    const parsedMinutos = parseInt(minutosValidezQRCanje, 10);
-    if (isNaN(parsedMinutos) || parsedMinutos < 1 || parsedMinutos > 180) {
-      return NextResponse.json(
-        { success: false, error: "Los minutos de validez del QR deben estar entre 1 y 180 minutos." },
-        { status: 400 }
-      );
-    }
-
-    const parsedEncuesta = parseInt(puntosPorEncuesta, 10);
-    const parsedReferido = parseInt(puntosPorReferido, 10);
+    const parsedEncuesta = rawEncuesta ?? NaN;
+    const parsedReferido = rawReferido ?? NaN;
 
     let config = await prisma.configuracionPuntos.findFirst();
 

@@ -6,7 +6,6 @@ export async function GET(request: Request) {
   try {
     const auth = await requireStaffSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { searchParams } = new URL(request.url);
     const query = (searchParams.get("q") || "").trim();

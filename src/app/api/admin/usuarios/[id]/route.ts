@@ -1,20 +1,29 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireAdminSession } from "@/lib/guards";
-import { RolUsuario } from "@prisma/client";
+import { requireSuperAdminSession } from "@/lib/guards";
+import {
+  nombreSchema,
+  passwordSchema,
+  readJsonBody,
+  staffEmailSchema,
+  usernameSchema,
+  validate,
+} from "@/lib/validation";
 
 export async function PUT(
   request: Request,
   props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAdminSession();
+    const auth = await requireSuperAdminSession();
     if (!auth.ok) return auth.response;
     const session = auth.session;
 
     const { id } = await props.params;
-    const body = await request.json();
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
+    const body = (bodyParsed.data ?? {}) as Record<string, unknown>;
     const { action } = body;
 
     const targetUser = await prisma.usuario.findUnique({
@@ -26,6 +35,10 @@ export async function PUT(
         { success: false, error: "Usuario no encontrado." },
         { status: 404 }
       );
+    }
+
+    if (targetUser.role === "SUPER_ADMIN" && id !== session.id) {
+      return NextResponse.json({ success: false, error: "No podés modificar otra cuenta de administrador." }, { status: 403 });
     }
 
     // 1. Alternar Estado Activo / Pausado
@@ -46,6 +59,7 @@ export async function PUT(
         select: {
           id: true,
           username: true,
+          email: true,
           nombre: true,
           role: true,
           activo: true,
@@ -63,13 +77,15 @@ export async function PUT(
 
     // 2. Cambiar / Resetear Contraseña
     if (action === "cambiar_password") {
-      const { password } = body;
-      if (!password || typeof password !== "string" || password.length < 4) {
-        return NextResponse.json(
-          { success: false, error: "La nueva contraseña debe tener al menos 4 caracteres." },
-          { status: 400 }
-        );
-      }
+      const passwordParsed = validate(
+        passwordSchema(
+          12,
+          "La nueva contraseña debe tener al menos 12 caracteres."
+        ),
+        body.password
+      );
+      if (!passwordParsed.ok) return passwordParsed.response;
+      const password = passwordParsed.data;
 
       const passwordHash = await bcrypt.hash(password, 10);
 
@@ -86,25 +102,34 @@ export async function PUT(
 
     // 3. Editar Perfil (Nombre, Rol, Username)
     if (action === "editar_perfil") {
-      const { nombre, role, username } = body;
+      const perfilBody = body as {
+        nombre?: unknown;
+        role?: unknown;
+        username?: unknown;
+        email?: unknown;
+      };
+      const nombreParsed = validate(
+        nombreSchema(2, "El nombre completo debe tener al menos 2 caracteres."),
+        perfilBody.nombre
+      );
+      if (!nombreParsed.ok) return nombreParsed.response;
+      const nombre = nombreParsed.data;
 
-      if (!nombre || typeof nombre !== "string" || nombre.trim().length < 2) {
-        return NextResponse.json(
-          { success: false, error: "El nombre completo debe tener al menos 2 caracteres." },
-          { status: 400 }
-        );
-      }
+      const rawUsername = perfilBody.username;
+      const cleanUsername = rawUsername
+        ? String(rawUsername).trim().toLowerCase()
+        : targetUser.username;
+      const usernameParsed = validate(usernameSchema, cleanUsername);
+      if (!usernameParsed.ok) return usernameParsed.response;
 
-      const cleanUsername = username ? String(username).trim().toLowerCase() : targetUser.username;
-      const usernameRegex = /^[a-z0-9_]{3,20}$/;
-      if (!usernameRegex.test(cleanUsername)) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "El usuario debe tener entre 3 y 20 caracteres y solo contener letras, números o guiones bajos.",
-          },
-          { status: 400 }
-        );
+      const emailParsed = perfilBody.email === undefined || perfilBody.email === ""
+        ? { ok: true as const, data: targetUser.email }
+        : validate(staffEmailSchema, perfilBody.email);
+      if (!emailParsed.ok) return emailParsed.response;
+      const email = emailParsed.data;
+      if (email && email !== targetUser.email) {
+        const existingEmail = await prisma.usuario.findUnique({ where: { email } });
+        if (existingEmail) return NextResponse.json({ success: false, error: "Ese email ya está registrado." }, { status: 400 });
       }
 
       // Si cambió de username, verificar unicidad
@@ -120,13 +145,9 @@ export async function PUT(
         }
       }
 
-      const validRoles: RolUsuario[] = ["ADMIN", "MOZO", "CAJERO"];
-      const targetRole = role && validRoles.includes(role as RolUsuario) ? (role as RolUsuario) : targetUser.role;
-
-      // Prevenir auto-degradación del admin logueado
-      if (id === session.id && targetRole !== "ADMIN") {
+      if (perfilBody.role !== undefined && perfilBody.role !== targetUser.role) {
         return NextResponse.json(
-          { success: false, error: "No puedes quitarte el rol de administrador a ti mismo." },
+          { success: false, error: "El nivel de acceso no se puede cambiar desde aquí." },
           { status: 400 }
         );
       }
@@ -136,11 +157,12 @@ export async function PUT(
         data: {
           nombre: nombre.trim(),
           username: cleanUsername,
-          role: targetRole,
+          email,
         },
         select: {
           id: true,
           username: true,
+          email: true,
           nombre: true,
           role: true,
           activo: true,
@@ -180,7 +202,7 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAdminSession();
+    const auth = await requireSuperAdminSession();
     if (!auth.ok) return auth.response;
     const session = auth.session;
 
@@ -211,6 +233,10 @@ export async function DELETE(
         { success: false, error: "Usuario no encontrado." },
         { status: 404 }
       );
+    }
+
+    if (targetUser.role === "SUPER_ADMIN") {
+      return NextResponse.json({ success: false, error: "No podés dar de baja una cuenta de administrador." }, { status: 403 });
     }
 
     const tieneRegistros =

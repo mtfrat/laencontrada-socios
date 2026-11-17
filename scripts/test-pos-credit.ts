@@ -1,7 +1,9 @@
 import { prisma } from "../src/lib/prisma";
 import { calculateTablePoints } from "../src/lib/points-engine";
+import { assertLocalReviewDatabase } from "./assert-local-review-db";
 
 async function run() {
+  assertLocalReviewDatabase();
   const socioBefore = await prisma.socio.findUnique({ where: { dni: "12345678" } });
   const user = await prisma.usuario.findUnique({ where: { username: "mozo1" } });
 

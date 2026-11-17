@@ -109,6 +109,7 @@ describe("auth: sesiones", () => {
           nombre: "Ana",
           role: "ADMIN",
           passwordHash: "hash",
+          activo: true,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -305,6 +306,7 @@ describe("auth: sesiones", () => {
           nombre: "Ana",
           role: "MOZO",
           passwordHash: "hash",
+          activo: true,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -313,6 +315,13 @@ describe("auth: sesiones", () => {
 
     const session = await getStaffSession();
     expect(session?.role).toBe("MOZO");
+  });
+
+  it("revoca la sesión del personal desactivado", async () => {
+    await createStaffSession({ id: "user-1", username: "ana", nombre: "Ana", role: "ADMIN" });
+    expect(await getStaffSession()).not.toBeNull();
+    fakePrisma.__reset({ usuarios: [{ id: "user-1", username: "ana", nombre: "Ana", role: "ADMIN", passwordHash: "hash", activo: false }] });
+    expect(await getStaffSession()).toBeNull();
   });
 
   it("la sesión de socio vence a los 7 días (no 30)", async () => {

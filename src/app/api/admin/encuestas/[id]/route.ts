@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/guards";
+import { readJsonBody, validate } from "@/lib/validation";
 
 export async function PUT(
   request: Request,
@@ -9,19 +11,30 @@ export async function PUT(
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { id } = await params;
-    const body = await request.json();
-    const { texto, categoria, activa, orden } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
+
+    const campos = validate(
+      z.object({
+        texto: z.string().trim().min(3, "El texto de la pregunta no puede estar vacío.").optional(),
+        categoria: z.string().trim().optional(),
+        activa: z.boolean().optional(),
+        orden: z.coerce.number().int().optional(),
+      }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const { texto, categoria, activa, orden } = campos.data;
 
     const actualizada = await prisma.preguntaEncuesta.update({
       where: { id },
       data: {
-        texto: texto !== undefined ? String(texto).trim() : undefined,
-        categoria: categoria !== undefined ? String(categoria).trim().toUpperCase() : undefined,
-        activa: activa !== undefined ? Boolean(activa) : undefined,
-        orden: orden !== undefined ? Number(orden) : undefined,
+        texto,
+        categoria: categoria !== undefined ? categoria.toUpperCase() : undefined,
+        activa,
+        orden,
       },
     });
 
@@ -42,7 +55,6 @@ export async function DELETE(
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { id } = await params;
 

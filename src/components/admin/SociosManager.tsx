@@ -8,20 +8,17 @@ import {
   AlertCircle,
   Loader2,
   Coins,
-  ToggleLeft,
-  ToggleRight,
   ChevronLeft,
   ChevronRight,
   X,
   Phone,
   Mail,
-  Calendar,
-  Sparkles,
   Plus,
   Minus,
   Download,
   UserPlus,
 } from "lucide-react";
+import styles from "./SociosRoster.module.css";
 
 interface SocioItem {
   id: string;
@@ -63,6 +60,10 @@ export default function SociosManager() {
   const [puntosAjuste, setPuntosAjuste] = useState<number>(50);
   const [motivoAjuste, setMotivoAjuste] = useState("");
   const [guardandoAjuste, setGuardandoAjuste] = useState(false);
+  const [modalContacto, setModalContacto] = useState<SocioItem | null>(null);
+  const [correoContacto, setCorreoContacto] = useState("");
+  const [guardandoCorreo, setGuardandoCorreo] = useState(false);
+  const [errorCorreo, setErrorCorreo] = useState<string | null>(null);
 
   // Modal Nuevo Socio
   const [modalNuevoSocio, setModalNuevoSocio] = useState(false);
@@ -144,6 +145,32 @@ export default function SociosManager() {
     setMotivoAjuste("");
   };
 
+  const handleOpenContacto = (socio: SocioItem) => {
+    setModalContacto(socio);
+    setCorreoContacto(socio.email ?? "");
+    setErrorCorreo(null);
+  };
+
+  const handleGuardarCorreo = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!modalContacto) return;
+    setGuardandoCorreo(true);
+    setErrorCorreo(null);
+    try {
+      const response = await fetch("/api/admin/socios", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "actualizar_correo", socioId: modalContacto.id, email: correoContacto }) });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "No se pudo actualizar el correo.");
+      setSocios((current) => current.map((socio) => socio.id === modalContacto.id ? { ...socio, email: data.email } : socio));
+      setToastMessage(data.message);
+      setModalContacto(null);
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (error) {
+      setErrorCorreo(error instanceof Error ? error.message : "No se pudo actualizar el correo.");
+    } finally {
+      setGuardandoCorreo(false);
+    }
+  };
+
   const handleSubmitAjuste = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!modalSocio) return;
@@ -181,10 +208,6 @@ export default function SociosManager() {
     } finally {
       setGuardandoAjuste(false);
     }
-  };
-
-  const handleExportCsv = () => {
-    window.open("/api/admin/socios/export", "_blank");
   };
 
   const handleCrearSocio = async (e: React.FormEvent) => {
@@ -271,12 +294,14 @@ export default function SociosManager() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por DNI, N° de socio, nombre o email..."
+            placeholder="Buscar por nombre, DNI o número de socio"
             className="w-full bg-[#050304] border border-[#5c131d]/30 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[#f5ede6] placeholder-[#f5ede6]/30 focus:outline-none focus:border-[#5c131d] focus:ring-1 focus:ring-[#5c131d]/40 transition"
           />
           {query && (
             <button
+              type="button"
               onClick={() => setQuery("")}
+              aria-label="Limpiar búsqueda"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#f5ede6]/40 hover:text-white"
             >
               <X className="w-4 h-4" />
@@ -286,15 +311,14 @@ export default function SociosManager() {
 
         <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
           {/* Botón Exportar CSV */}
-          <button
-            type="button"
-            onClick={handleExportCsv}
+          <a
+            href="/api/admin/socios/export"
             className="px-3.5 py-2.5 rounded-2xl bg-[#150c0e] hover:bg-[#1f1013] text-[#f5ede6] hover:text-white border border-[#5c131d]/30 transition flex items-center gap-2 text-xs font-semibold shadow"
             title="Descargar base completa de socios en CSV compatible con Excel"
           >
             <Download className="w-4 h-4 text-emerald-400" />
             <span>Exportar CSV</span>
-          </button>
+          </a>
 
           {/* Botón Nuevo Socio */}
           <button
@@ -312,7 +336,7 @@ export default function SociosManager() {
           {/* Contador de padrón */}
           <div className="border-l border-[#5c131d]/25 pl-3 flex items-center gap-2.5">
             <div className="text-right">
-              <p className="text-[10px] text-[#f5ede6]/40 uppercase font-medium">Padrón</p>
+              <p className="text-[10px] text-[#f5ede6]/40 uppercase font-medium">{query.trim() ? "Resultados" : "Socios"}</p>
               <p className="text-lg font-bold font-mono text-[#d4aa58]">
                 {pagination.total.toLocaleString("es-AR")}
               </p>
@@ -325,7 +349,7 @@ export default function SociosManager() {
       </div>
 
       {/* Roster Table */}
-      <div className="bg-[#0d0708] border border-[#5c131d]/25 rounded-3xl overflow-hidden shadow-xl">
+      <div className={styles.roster}>
         {loading ? (
           <div className="py-20 text-center text-[#f5ede6]/50 space-y-2">
             <Loader2 className="w-8 h-8 mx-auto animate-spin text-[#5c131d]" />
@@ -335,126 +359,92 @@ export default function SociosManager() {
           <div className="py-16 text-center text-[#f5ede6]/50">
             <Users className="w-12 h-12 mx-auto mb-2 text-[#5c131d]/40" />
             <p className="font-semibold text-white">No se encontraron socios</p>
-            <p className="text-xs text-[#f5ede6]/40 mt-1">Prueba con otro término de búsqueda.</p>
+            <p className="text-xs text-[#f5ede6]/40 mt-1">{query.trim() ? "Probá otra búsqueda." : "Todavía no hay socios registrados."}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#f5ede6]/80">
-              <thead className="bg-[#070405] border-b border-[#5c131d]/20 text-[11px] uppercase tracking-wider text-[#f5ede6]/50 font-semibold">
-                <tr>
-                  <th className="py-3.5 px-4">Socio</th>
-                  <th className="py-3.5 px-4 font-mono">DNI</th>
-                  <th className="py-3.5 px-4">Contacto</th>
-                  <th className="py-3.5 px-4 text-right">Puntos Actuales</th>
-                  <th className="py-3.5 px-4 text-center">Visitas</th>
-                  <th className="py-3.5 px-4 text-center">Estado</th>
-                  <th className="py-3.5 px-4 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#5c131d]/15">
-                {socios.map((s) => (
-                  <tr key={s.id} className="hover:bg-[#150c0e]/50 transition">
-                    {/* Socio / Membresía */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#d4aa58]/10 text-[#d4aa58] border border-[#d4aa58]/20">
-                          {s.numeroSocio}
-                        </span>
-                        <div>
-                          <p className="font-bold text-white text-xs">
-                            {s.nombre} {s.apellido || ""}
-                          </p>
-                          <p className="text-[10px] text-[#f5ede6]/40 flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3" />
-                            Alta: {new Date(s.fechaAlta).toLocaleDateString("es-AR")}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* DNI */}
-                    <td className="py-3 px-4 font-mono font-semibold text-[#f5ede6]/90">
-                      {s.dni}
-                    </td>
-
-                    {/* Contacto */}
-                    <td className="py-3 px-4 space-y-0.5">
-                      {s.email ? (
-                        <p className="text-[11px] text-[#f5ede6]/80 flex items-center gap-1">
-                          <Mail className="w-3 h-3 text-[#5c131d]/80 shrink-0" />
-                          <span className="truncate max-w-[180px]">{s.email}</span>
-                        </p>
-                      ) : (
-                        <span className="text-[10px] text-[#f5ede6]/30 italic">Sin email</span>
-                      )}
-                      {s.telefono && (
-                        <p className="text-[10px] text-[#f5ede6]/60 flex items-center gap-1 font-mono">
-                          <Phone className="w-3 h-3 text-[#5c131d]/80 shrink-0" />
-                          <span>{s.telefono}</span>
-                        </p>
-                      )}
-                    </td>
-
-                    {/* Puntos */}
-                    <td className="py-3 px-4 text-right">
-                      <p className="font-mono font-bold text-sm text-[#d4aa58]">
-                        {s.puntosActuales.toLocaleString("es-AR")} pts
-                      </p>
-                      <p className="text-[10px] font-mono text-[#f5ede6]/40">
-                        Histórico: {s.puntosHistoricos}
-                      </p>
-                    </td>
-
-                    {/* Visitas */}
-                    <td className="py-3 px-4 text-center">
-                      <span className="font-mono text-xs text-[#f5ede6]/70">
-                        {s.totalVisitas}
-                      </span>
-                    </td>
-
-                    {/* Estado */}
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                          s.activo
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                            : "bg-red-500/20 text-red-400 border border-red-500/30"
-                        }`}
-                      >
-                        {s.activo ? "Activo" : "Pausado"}
-                      </span>
-                    </td>
-
-                    {/* Acciones */}
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenAjuste(s)}
-                          className="px-2.5 py-1.5 bg-[#150c0e] hover:bg-[#5c131d] hover:text-white text-[#d4aa58] rounded-xl font-bold text-[11px] transition flex items-center gap-1 border border-[#5c131d]/30 shadow-sm"
-                          title="Ajustar puntos manualmente"
-                        >
-                          <Coins className="w-3.5 h-3.5 text-[#d4aa58]" />
-                          <span>Ajustar</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleToggleActivo(s)}
-                          className="p-1.5 text-[#f5ede6]/40 hover:text-white rounded-lg transition"
-                          title={s.activo ? "Pausar cuenta" : "Activar cuenta"}
-                        >
-                          {s.activo ? (
-                            <ToggleRight className="w-5 h-5 text-emerald-400" />
-                          ) : (
-                            <ToggleLeft className="w-5 h-5 text-[#f5ede6]/30" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className={styles.desktop}>
+              <table className={styles.table}>
+                <colgroup>
+                  <col style={{ width: "19%" }} />
+                  <col style={{ width: "21%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "23%" }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">Socio</th>
+                    <th scope="col">Identificación y contacto</th>
+                    <th scope="col">Puntos disponibles</th>
+                    <th scope="col">Actividad</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Gestión</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {socios.map((s) => (
+                    <tr key={s.id} className={s.activo ? undefined : styles.pausedRow}>
+                      <td>
+                        <p className={styles.name}>{s.nombre} {s.apellido || ""}</p>
+                        <p className={styles.memberMeta}>
+                          <span className={styles.memberNo}>{s.numeroSocio}</span>
+                          <span aria-hidden="true">·</span>
+                          Alta {new Date(s.fechaAlta).toLocaleDateString("es-AR")}
+                        </p>
+                      </td>
+                      <td>
+                        <p className={styles.dni}>DNI {s.dni}</p>
+                        {s.email && <p className={styles.contactLine}><Mail size={13} aria-hidden="true" /><span>{s.email}</span></p>}
+                        {s.telefono && <p className={styles.contactLine}><Phone size={13} aria-hidden="true" /><span>{s.telefono}</span></p>}
+                        {!s.email && !s.telefono && <p className={styles.missing}>Sin contacto cargado</p>}
+                      </td>
+                      <td>
+                        <p className={styles.pointsValue}>{s.puntosActuales.toLocaleString("es-AR")} <span>pts</span></p>
+                        <p className={styles.muted}>Histórico: {s.puntosHistoricos.toLocaleString("es-AR")}</p>
+                      </td>
+                      <td>
+                        <p className={styles.activityValue}>{s.totalVisitas} {s.totalVisitas === 1 ? "visita" : "visitas"}</p>
+                        <p className={styles.muted}>{s.totalCanjes} {s.totalCanjes === 1 ? "canje" : "canjes"}</p>
+                      </td>
+                      <td><span className={`${styles.status} ${s.activo ? styles.active : styles.paused}`}>{s.activo ? "Activo" : "Pausado"}</span></td>
+                      <td>
+                        <div className={styles.actions}>
+                          <button type="button" onClick={() => handleOpenAjuste(s)} className={styles.adjustButton}>Ajustar<span className="sr-only"> puntos de {s.nombre} {s.apellido || ""}</span></button>
+                          <button type="button" onClick={() => handleOpenContacto(s)} className={styles.stateButton}>Correo<span className="sr-only"> de {s.nombre} {s.apellido || ""}</span></button>
+                          <button type="button" onClick={() => handleToggleActivo(s)} className={styles.stateButton}>{s.activo ? "Pausar" : "Activar"}<span className="sr-only"> cuenta de {s.nombre} {s.apellido || ""}</span></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className={styles.mobile} aria-label="Socios registrados">
+              {socios.map((s) => (
+                <article key={s.id} className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <div>
+                      <p className={styles.name}>{s.nombre} {s.apellido || ""}</p>
+                      <p className={styles.memberMeta}><span className={styles.memberNo}>{s.numeroSocio}</span><span aria-hidden="true">·</span>DNI {s.dni}</p>
+                    </div>
+                    <span className={`${styles.status} ${s.activo ? styles.active : styles.paused}`}>{s.activo ? "Activo" : "Pausado"}</span>
+                  </div>
+                  <div className={styles.cardStats}>
+                    <div><p className={styles.cardLabel}>Puntos disponibles</p><p className={styles.pointsValue}>{s.puntosActuales.toLocaleString("es-AR")} <span>pts</span></p><p className={styles.muted}>Histórico: {s.puntosHistoricos.toLocaleString("es-AR")}</p></div>
+                    <div><p className={styles.cardLabel}>Actividad</p><p className={styles.activityValue}>{s.totalVisitas} {s.totalVisitas === 1 ? "visita" : "visitas"}</p><p className={styles.muted}>{s.totalCanjes} {s.totalCanjes === 1 ? "canje" : "canjes"}</p></div>
+                  </div>
+                  {(s.email || s.telefono) && <p className={styles.cardContact}>{[s.email, s.telefono].filter(Boolean).join(" · ")}</p>}
+                  <div className={styles.cardActions}>
+                    <button type="button" onClick={() => handleOpenAjuste(s)} className={styles.adjustButton}>Ajustar puntos</button>
+                    <button type="button" onClick={() => handleOpenContacto(s)} className={styles.stateButton}>Correo</button>
+                    <button type="button" onClick={() => handleToggleActivo(s)} className={styles.stateButton}>{s.activo ? "Pausar cuenta" : "Activar cuenta"}</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Pagination Bar */}
@@ -482,6 +472,24 @@ export default function SociosManager() {
           </div>
         )}
       </div>
+
+      {modalContacto && (
+        <div className={styles.contactBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !guardandoCorreo) setModalContacto(null); }}>
+          <div className={styles.contactDialog} role="dialog" aria-modal="true" aria-labelledby="contact-title">
+            <div className={styles.contactHeader}>
+              <div><h3 id="contact-title">Correo del socio</h3><p>{modalContacto.nombre} {modalContacto.apellido || ""} · {modalContacto.numeroSocio}</p></div>
+              <button type="button" className={styles.contactClose} onClick={() => setModalContacto(null)} aria-label="Cerrar" disabled={guardandoCorreo}><X size={18} /></button>
+            </div>
+            <form className={styles.contactForm} onSubmit={handleGuardarCorreo}>
+              <label htmlFor="correo-socio">Correo electrónico</label>
+              <input id="correo-socio" type="email" required maxLength={254} autoComplete="email" value={correoContacto} onChange={(event) => setCorreoContacto(event.target.value)} placeholder="socio@correo.com" autoFocus disabled={guardandoCorreo} />
+              <p>El socio recibirá aquí su código de ingreso. Confirmá la dirección con la persona antes de guardarla.</p>
+              {errorCorreo && <p role="alert" className={styles.contactError}>{errorCorreo}</p>}
+              <button type="submit" className={styles.contactSave} disabled={guardandoCorreo}>{guardandoCorreo ? "Guardando…" : "Guardar correo"}</button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Ajuste Manual de Puntos */}
       {modalSocio && (
@@ -579,7 +587,7 @@ export default function SociosManager() {
               {/* Motivo Obligatorio */}
               <div>
                 <label className="block font-semibold text-[#f5ede6]/80 mb-1">
-                  Motivo del Ajuste (Auditoría Gerencial) *
+                  Motivo del ajuste (auditoría del administrador) *
                 </label>
                 <textarea
                   rows={2}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Gift,
   Plus,
@@ -9,11 +10,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Sparkles,
   ToggleLeft,
   ToggleRight,
   Package,
-  Layers,
   X,
   Save,
   Tag,
@@ -43,6 +42,7 @@ export default function PremiosManager() {
   const [puntosRequeridos, setPuntosRequeridos] = useState(100);
   const [stock, setStock] = useState(-1); // -1 = ilimitado
   const [imagenUrl, setImagenUrl] = useState("");
+  const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [activo, setActivo] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -68,6 +68,8 @@ export default function PremiosManager() {
   };
 
   useEffect(() => {
+    // El estado inicial ya muestra la carga; los datos se actualizan al responder la API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPremios();
   }, []);
 
@@ -78,6 +80,7 @@ export default function PremiosManager() {
     setPuntosRequeridos(100);
     setStock(-1);
     setImagenUrl("");
+    setImagenFile(null);
     setActivo(true);
     setModalOpen(true);
   };
@@ -89,6 +92,7 @@ export default function PremiosManager() {
     setPuntosRequeridos(p.puntosRequeridos);
     setStock(p.stock);
     setImagenUrl(p.imagenUrl || "");
+    setImagenFile(null);
     setActivo(p.activo);
     setModalOpen(true);
   };
@@ -125,6 +129,17 @@ export default function PremiosManager() {
 
       const data = await res.json();
       if (data.success) {
+        const premioId = editingId || data.premio?.id;
+        if (imagenFile && premioId) {
+          const imageForm = new FormData();
+          imageForm.set("imagen", imagenFile);
+          const imageResponse = await fetch(`/api/admin/premios/${premioId}/imagen`, { method: "POST", body: imageForm });
+          const imageResult = await imageResponse.json();
+          if (!imageResponse.ok || !imageResult.success) {
+            setEditingId(premioId);
+            throw new Error(imageResult.error || "El premio se guardó, pero no se pudo cargar la imagen. Volvé a intentar.");
+          }
+        }
         setToastMessage(editingId ? "¡Premio actualizado!" : "¡Nuevo premio creado!");
         setModalOpen(false);
         await fetchPremios();
@@ -132,8 +147,8 @@ export default function PremiosManager() {
       } else {
         setErrorMessage(data.error || "Ocurrió un error al guardar.");
       }
-    } catch {
-      setErrorMessage("Error de red al guardar el premio.");
+    } catch (cause) {
+      setErrorMessage(cause instanceof Error ? cause.message : "Error de red al guardar el premio.");
     } finally {
       setSaving(false);
     }
@@ -205,63 +220,31 @@ export default function PremiosManager() {
         </div>
       )}
 
-      {/* KPI Cards & Header Action */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-[#0d0708] rounded-2xl p-5 border border-[#5c131d]/35 flex items-center justify-between shadow-lg">
-          <div>
-            <p className="text-xs font-medium text-stone-400">Premios Activos</p>
-            <p className="text-3xl font-extrabold text-white font-mono mt-1">{totalActivos}</p>
-            <p className="text-[11px] text-[#ce7281] mt-1">Disponibles para canje</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center">
-            <Gift className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-[#0d0708] rounded-2xl p-5 border border-stone-800/80 flex items-center justify-between shadow-lg">
-          <div>
-            <p className="text-xs font-medium text-stone-400">Total en Catálogo</p>
-            <p className="text-3xl font-extrabold text-white font-mono mt-1">{premios.length}</p>
-            <p className="text-[11px] text-stone-500 mt-1">Incluye pausados</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#150c0e] text-stone-300 border border-stone-800 flex items-center justify-center">
-            <Layers className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-[#0d0708] rounded-2xl p-5 border border-[#5c131d]/35 flex items-center justify-between shadow-lg">
-          <div>
-            <p className="text-xs font-medium text-stone-400">Canjes Realizados</p>
-            <p className="text-3xl font-extrabold text-[#d4aa58] font-mono mt-1">
-              {totalCanjesHistoricos}
-            </p>
-            <p className="text-[11px] text-[#ce7281] mt-1">Validados en salón</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#5c131d]/20 text-[#d4aa58] border border-[#5c131d]/30 flex items-center justify-center">
-            <Sparkles className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+      {/* El alta queda a la vista antes de las métricas. */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Tag className="w-5 h-5 text-[#ce7281]" />
-            Catálogo de Recompensas
+            Catálogo de premios
           </h2>
-          <p className="text-xs text-stone-400">
-            Define los beneficios, costo en puntos, control de stock y visibilidad para los socios.
+          <p className="text-sm text-stone-400">
+            Agregá productos y definí sus puntos y disponibilidad.
           </p>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="bg-[#5c131d] hover:bg-[#7a1a27] text-white font-bold px-4 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 text-sm shrink-0 self-start sm:self-auto"
+          className="min-h-11 w-full bg-[#5c131d] hover:bg-[#7a1a27] text-white font-bold px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shrink-0 sm:w-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>Nuevo Premio</span>
+          <span>Agregar premio</span>
         </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 border-y border-stone-800 py-4 sm:gap-4" aria-label="Resumen de premios">
+        <div><p className="text-xs text-stone-400">Activos</p><p className="mt-1 font-mono text-2xl font-semibold text-white">{totalActivos}</p></div>
+        <div><p className="text-xs text-stone-400">En catálogo</p><p className="mt-1 font-mono text-2xl font-semibold text-white">{premios.length}</p></div>
+        <div><p className="text-xs text-stone-400">Canjes</p><p className="mt-1 font-mono text-2xl font-semibold text-[#d4aa58]">{totalCanjesHistoricos}</p></div>
       </div>
 
       {/* Grid of Prizes */}
@@ -275,7 +258,7 @@ export default function PremiosManager() {
           <Gift className="w-12 h-12 mx-auto mb-3 text-stone-600" />
           <p className="font-semibold text-white">No hay premios configurados</p>
           <p className="text-xs text-stone-500 mt-1">
-            Haz clic en &quot;Nuevo Premio&quot; para agregar la primera recompensa a la carta.
+            Usá &quot;Agregar premio&quot; para sumar el primer producto al catálogo.
           </p>
         </div>
       ) : (
@@ -290,6 +273,7 @@ export default function PremiosManager() {
               }`}
             >
               <div>
+                {p.imagenUrl && <div className="relative mb-4 h-44 overflow-hidden rounded-xl bg-stone-900"><Image src={p.imagenUrl} alt={p.titulo} fill unoptimized className="object-cover" /></div>}
                 {/* Header card: points badge + status badge */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2">
@@ -311,7 +295,8 @@ export default function PremiosManager() {
                     <button
                       onClick={() => handleToggleActivo(p)}
                       title={p.activo ? "Pausar premio" : "Activar premio"}
-                      className="p-1.5 rounded-lg text-stone-400 hover:text-white transition"
+                      aria-label={p.activo ? `Pausar ${p.titulo}` : `Activar ${p.titulo}`}
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-stone-400 hover:text-white transition"
                     >
                       {p.activo ? (
                         <ToggleRight className="w-5 h-5 text-emerald-400" />
@@ -321,15 +306,17 @@ export default function PremiosManager() {
                     </button>
                     <button
                       onClick={() => openEditModal(p)}
-                      className="p-1.5 rounded-lg text-stone-400 hover:text-[#ce7281] hover:bg-stone-900 transition"
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-stone-400 hover:text-[#ce7281] hover:bg-stone-900 transition"
                       title="Editar premio"
+                      aria-label={`Editar ${p.titulo}`}
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(p)}
-                      className="p-1.5 rounded-lg text-stone-400 hover:text-red-400 hover:bg-stone-900 transition"
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-stone-400 hover:text-red-400 hover:bg-stone-900 transition"
                       title="Eliminar premio"
+                      aria-label={`Eliminar ${p.titulo}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -375,7 +362,8 @@ export default function PremiosManager() {
               </div>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-stone-400 hover:text-white p-1 rounded-lg"
+                aria-label="Cerrar formulario de premio"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-stone-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -383,71 +371,74 @@ export default function PremiosManager() {
 
             <form onSubmit={handleSave} className="space-y-4 text-sm">
               <div>
-                <label className="block text-xs font-semibold text-stone-300 mb-1">
-                  Título del Premio *
+                <label htmlFor="premio-titulo" className="block text-sm font-medium text-stone-300 mb-1">
+                  Nombre del premio *
                 </label>
                 <input
+                  id="premio-titulo"
                   type="text"
                   required
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
                   placeholder="Ej: Postre de la Casa a elección"
-                  className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-[#5c131d]"
+                  className="min-h-11 w-full rounded-xl border border-stone-700 bg-[#050304] px-3 py-2 text-base text-stone-100 focus:border-[#d4aa58] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-300 mb-1">
-                  Descripción o Condiciones
+                <label htmlFor="premio-descripcion" className="block text-sm font-medium text-stone-300 mb-1">
+                  Descripción
                 </label>
                 <textarea
+                  id="premio-descripcion"
                   rows={2}
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
                   placeholder="Ej: Incluye flan casero, panqueque con dulce de leche o bocha de helado."
-                  className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-[#5c131d]"
+                  className="w-full rounded-xl border border-stone-700 bg-[#050304] px-3 py-2 text-base text-stone-100 focus:border-[#d4aa58] focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
-                    Puntos Requeridos *
+                  <label htmlFor="premio-puntos" className="block text-sm font-medium text-stone-300 mb-1">
+                    Puntos necesarios *
                   </label>
                   <input
+                    id="premio-puntos"
                     type="number"
                     required
                     min={1}
                     value={puntosRequeridos}
                     onChange={(e) => setPuntosRequeridos(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 font-mono font-bold focus:outline-none focus:border-[#5c131d]"
+                    className="min-h-11 w-full rounded-xl border border-stone-700 bg-[#050304] px-3 py-2 font-mono text-base font-bold text-stone-100 focus:border-[#d4aa58] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
-                    Stock (-1 = Ilimitado)
+                  <label htmlFor="premio-stock" className="block text-sm font-medium text-stone-300 mb-1">
+                    Stock
                   </label>
                   <input
+                    id="premio-stock"
                     type="number"
-                    value={stock}
-                    onChange={(e) => setStock(parseInt(e.target.value) || 0)}
-                    className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 font-mono focus:outline-none focus:border-[#5c131d]"
+                    min={0}
+                    disabled={stock === -1}
+                    value={stock === -1 ? "" : stock}
+                    onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder={stock === -1 ? "Ilimitado" : "0"}
+                    className="min-h-11 w-full rounded-xl border border-stone-700 bg-[#050304] px-3 py-2 font-mono text-base text-stone-100 focus:border-[#d4aa58] focus:outline-none disabled:text-stone-400"
                   />
+                  <label className="mt-2 flex items-center gap-2 text-xs text-stone-300"><input type="checkbox" checked={stock === -1} onChange={(e) => setStock(e.target.checked ? -1 : 0)} className="size-4" />Stock ilimitado</label>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-300 mb-1">
-                  URL de Imagen (Opcional)
-                </label>
-                <input
-                  type="url"
-                  value={imagenUrl}
-                  onChange={(e) => setImagenUrl(e.target.value)}
-                  placeholder="https://ejemplo.com/foto-premio.jpg"
-                  className="w-full bg-[#050304] border border-stone-800 rounded-xl px-3 py-2 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-[#5c131d]"
-                />
+                <span className="block text-sm font-medium text-stone-300 mb-1">Imagen del producto</span>
+                {imagenUrl && <div className="relative mb-2 h-36 overflow-hidden rounded-xl bg-stone-900"><Image src={imagenUrl} alt="Imagen actual del premio" fill unoptimized className="object-cover" /></div>}
+                <input id="imagen-premio" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImagenFile(event.target.files?.[0] || null)} className="peer sr-only" />
+                <label htmlFor="imagen-premio" className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-stone-600 bg-[#150c0e] px-4 text-sm font-medium text-white hover:border-[#d4aa58] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-[#d4aa58]">Elegir imagen</label>
+                <p className="mt-2 text-xs text-stone-400">{imagenFile ? imagenFile.name : "JPG, PNG o WebP · hasta 2 MB"}</p>
               </div>
 
               <div className="flex items-center gap-2 pt-1">
@@ -458,8 +449,8 @@ export default function PremiosManager() {
                   onChange={(e) => setActivo(e.target.checked)}
                   className="rounded bg-[#050304] border-stone-800 text-[#5c131d] focus:ring-0 w-4 h-4 cursor-pointer"
                 />
-                <label htmlFor="activoCheck" className="text-xs text-stone-300 cursor-pointer font-medium">
-                  Premio visible y activo para canje inmediato
+                <label htmlFor="activoCheck" className="text-sm text-stone-300 cursor-pointer font-medium">
+                  Mostrar el premio a los socios
                 </label>
               </div>
 
@@ -467,21 +458,21 @@ export default function PremiosManager() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-stone-400 hover:text-white transition text-xs font-medium"
+                  className="min-h-11 px-4 py-2 rounded-xl text-stone-300 hover:text-white transition text-sm font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="bg-[#5c131d] hover:bg-[#7a1a27] disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl transition flex items-center gap-2 text-xs shadow-lg"
+                  className="min-h-11 bg-[#5c131d] hover:bg-[#7a1a27] disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl transition flex items-center gap-2 text-sm"
                 >
                   {saving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  <span>{editingId ? "Guardar Cambios" : "Crear Premio"}</span>
+                  <span>{editingId ? "Guardar cambios" : "Crear premio"}</span>
                 </button>
               </div>
             </form>

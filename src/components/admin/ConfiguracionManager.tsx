@@ -46,6 +46,8 @@ export default function ConfiguracionManager() {
   };
 
   useEffect(() => {
+    // El estado inicial ya muestra la carga; los datos se actualizan al responder la API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConfig();
   }, []);
 
@@ -237,7 +239,7 @@ export default function ConfiguracionManager() {
                   Validez Temporal del Código QR de Premios
                 </h2>
                 <p className="text-xs text-stone-400">
-                  Tiempo máximo para que el mozo valide el cupón en mesa antes de que expire.
+                  Tiempo máximo para que el equipo valide el cupón en mesa antes de que expire.
                 </p>
               </div>
             </div>
@@ -281,7 +283,7 @@ export default function ConfiguracionManager() {
             <p className="text-[11px] text-stone-400 mt-3 flex items-start gap-1.5 leading-relaxed">
               <ShieldAlert className="w-4 h-4 text-[#ce7281] shrink-0 mt-0.5" />
               <span>
-                <strong>Medida antifraude:</strong> El límite de 15 minutos garantiza que el cliente no pueda guardar capturas de pantalla de un cupón y reutilizarlo en visitas posteriores. Si transcurre el tiempo sin validarse, los puntos son reintegrados automáticamente al socio.
+                <strong>Validez del cupón:</strong> El cupón vence después de {minutosValidezQR} minutos. Si no se valida a tiempo, los puntos vuelven a estar disponibles para el socio.
               </span>
             </p>
           </div>

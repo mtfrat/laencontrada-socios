@@ -8,8 +8,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Award,
-  Sparkles,
   ToggleLeft,
   ToggleRight,
   Edit2,
@@ -75,6 +73,8 @@ export default function EncuestasManager() {
   };
 
   useEffect(() => {
+    // El estado inicial ya muestra la carga; los datos se actualizan al responder la API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, []);
 
@@ -373,7 +373,7 @@ export default function EncuestasManager() {
               className="px-3.5 py-2.5 bg-[#050304] border border-[#5c131d]/30 rounded-xl text-xs text-[#f5ede6]/80 focus:outline-none focus:border-[#5c131d]"
             >
               <option value="COMIDA">Comida / Platos</option>
-              <option value="ATENCION">Atención / Mozos</option>
+              <option value="ATENCION">Atención del equipo</option>
               <option value="AMBIENTE">Ambiente / Clima</option>
               <option value="BEBIDAS">Bebidas / Vinos</option>
               <option value="GENERAL">General</option>

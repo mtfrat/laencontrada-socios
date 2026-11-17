@@ -17,12 +17,12 @@ function unauthorized(): NextResponse {
   );
 }
 
-function forbidden(role: RolUsuario): NextResponse {
+function forbidden(role: RolUsuario, requiredRole: string): NextResponse {
   return NextResponse.json(
     {
       success: false,
       code: "FORBIDDEN",
-      error: `Se requiere rol ADMIN para acceder a este recurso. Tu rol actual es ${role}.`,
+      error: `Se requiere acceso de ${requiredRole}. Tu acceso actual es ${role === "SUPER_ADMIN" ? "Administrador" : "Equipo"}.`,
     },
     { status: 403 }
   );
@@ -41,8 +41,17 @@ export async function requireAdminSession(): Promise<StaffGuardResult> {
   if (!result.ok) {
     return result;
   }
-  if (result.session.role !== "ADMIN") {
-    return { ok: false, response: forbidden(result.session.role) };
+  if (result.session.role !== "SUPER_ADMIN") {
+    return { ok: false, response: forbidden(result.session.role, "Administrador") };
+  }
+  return result;
+}
+
+export async function requireSuperAdminSession(): Promise<StaffGuardResult> {
+  const result = await requireStaffSession();
+  if (!result.ok) return result;
+  if (result.session.role !== "SUPER_ADMIN") {
+    return { ok: false, response: forbidden(result.session.role, "Administrador") };
   }
   return result;
 }

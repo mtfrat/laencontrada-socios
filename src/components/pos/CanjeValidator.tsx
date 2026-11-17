@@ -12,8 +12,8 @@ import {
   Camera,
   CameraOff,
   Keyboard,
-  Sparkles,
 } from "lucide-react";
+import styles from "./CanjeValidator.module.css";
 
 interface ValidacionResult {
   id: string;
@@ -27,6 +27,23 @@ interface ValidacionResult {
   };
   fechaCanje: string;
   validadoPor: string;
+}
+
+const scannerCleanup = new WeakMap<Html5Qrcode, Promise<void>>();
+
+function releaseScanner(scanner: Html5Qrcode) {
+  const pending = scannerCleanup.get(scanner);
+  if (pending) return pending;
+  const cleanup = (async () => {
+    try {
+      if (scanner.isScanning) await scanner.stop();
+      await scanner.clear();
+    } catch (error) {
+      console.error("Error cerrando cámara:", error);
+    }
+  })();
+  scannerCleanup.set(scanner, cleanup);
+  return cleanup;
 }
 
 export default function CanjeValidator() {
@@ -43,7 +60,7 @@ export default function CanjeValidator() {
 
   const procesarValidacion = useCallback(async (codigoAValidar: string) => {
     if (!codigoAValidar || !codigoAValidar.trim()) {
-      setErrorMessage("Por favor ingresa o escanea el código del cupón.");
+      setErrorMessage("Ingresá o escaneá el código del cupón.");
       return;
     }
 
@@ -78,37 +95,33 @@ export default function CanjeValidator() {
   };
 
   const stopCamera = useCallback(async () => {
-    if (html5QrCodeRef.current) {
-      try {
-        if (html5QrCodeRef.current.isScanning) {
-          await html5QrCodeRef.current.stop();
-        }
-        await html5QrCodeRef.current.clear();
-      } catch (err) {
-        console.error("Error deteniendo cámara:", err);
-      }
-      html5QrCodeRef.current = null;
-    }
     setCameraActiva(false);
     setIniciandoCamara(false);
+    const scanner = html5QrCodeRef.current;
+    html5QrCodeRef.current = null;
+    if (scanner?.isScanning) await releaseScanner(scanner);
   }, []);
 
-  const startCamera = async () => {
+  const startCamera = () => {
     setErrorMessage(null);
     setCameraError(null);
     setIniciandoCamara(true);
+    setCameraActiva(true);
+  };
 
-    try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      setCameraActiva(true);
-
-      // Pequeño timeout para permitir que el elemento #qr-reader-target se monte en el DOM
-      setTimeout(async () => {
-        try {
-          const scanner = new Html5Qrcode("qr-reader-target");
-          html5QrCodeRef.current = scanner;
-
-          await scanner.start(
+  // El lector se crea después de que React montó el contenedor de cámara.
+  useEffect(() => {
+    if (!cameraActiva) return;
+    let cancelled = false;
+    let scanner: Html5Qrcode | null = null;
+    let started = false;
+    const open = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (cancelled) return;
+        scanner = new Html5Qrcode("qr-reader-target");
+        html5QrCodeRef.current = scanner;
+        await scanner.start(
             { facingMode: "environment" },
             {
               fps: 10,
@@ -116,6 +129,7 @@ export default function CanjeValidator() {
               aspectRatio: 1.0,
             },
             async (decodedText: string) => {
+              if (cancelled) return;
               if (typeof window !== "undefined" && window.navigator && "vibrate" in window.navigator) {
                 try {
                   window.navigator.vibrate(120);
@@ -124,50 +138,38 @@ export default function CanjeValidator() {
                 }
               }
 
-              // Detener cámara inmediatamente al detectar código
               await stopCamera();
-
-              // Validar código capturado
               setCodigo(decodedText);
               await procesarValidacion(decodedText);
             },
             () => {
               // Frame sin QR: continuar escaneando
             }
-          );
-          setIniciandoCamara(false);
-        } catch (err: unknown) {
-          console.error("Error inicializando Html5Qrcode:", err);
-          setCameraError(
-            "No se pudo acceder a la cámara. Asegúrate de conceder permisos al navegador o escribe el código manualmente."
-          );
-          setCameraActiva(false);
-          setIniciandoCamara(false);
+        );
+        started = true;
+        if (cancelled) {
+          await releaseScanner(scanner);
+          return;
         }
-      }, 150);
-    } catch (err: unknown) {
-      console.error("Error importando html5-qrcode:", err);
-      setCameraError("El escáner no es compatible con este navegador.");
-      setCameraActiva(false);
-      setIniciandoCamara(false);
-    }
-  };
-
-  // Limpiar cámara si el componente se desmonta
-  useEffect(() => {
-    return () => {
-      if (html5QrCodeRef.current) {
-        try {
-          if (html5QrCodeRef.current.isScanning) {
-            html5QrCodeRef.current.stop().catch(() => {});
-          }
-          html5QrCodeRef.current.clear();
-        } catch {
-          // Silencioso
+        setIniciandoCamara(false);
+      } catch (error) {
+        if (cancelled) {
+          if (scanner) await releaseScanner(scanner);
+          return;
         }
+        console.error("Error iniciando cámara:", error);
+        setCameraError("No se pudo acceder a la cámara. Revisá los permisos del navegador o ingresá el código manualmente.");
+        setCameraActiva(false);
+        setIniciandoCamara(false);
       }
     };
-  }, []);
+    void open();
+    return () => {
+      cancelled = true;
+      if (scanner && started) void releaseScanner(scanner);
+      if (html5QrCodeRef.current === scanner) html5QrCodeRef.current = null;
+    };
+  }, [cameraActiva, procesarValidacion, stopCamera]);
 
   const handleReset = () => {
     setResultado(null);
@@ -180,237 +182,91 @@ export default function CanjeValidator() {
   };
 
   return (
-    <div className="bg-[#0d0708] border border-[#5c131d]/35 rounded-3xl p-6 shadow-2xl max-w-xl mx-auto space-y-5">
-      {/* Header con indicador de modo */}
-      <div className="flex items-center justify-between border-b border-[#5c131d]/20 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#5c131d]/25 text-[#d4aa58] border border-[#5c131d]/40 flex items-center justify-center font-bold">
-            <QrCode className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white font-serif">Validador de Cupones QR</h2>
-            <p className="text-xs text-[#f5ede6]/50">
-              Escaneo en vivo por cámara o ingreso manual de código
-            </p>
-          </div>
+    <section className={styles.validator} aria-labelledby="validator-title">
+      <header className={styles.header}>
+        <div className={styles.headerIcon}><QrCode size={23} aria-hidden="true" /></div>
+        <div>
+          <p className={styles.eyebrow}>ENTREGA DE PREMIOS</p>
+          <h2 id="validator-title" className={styles.title}>Validar cupón</h2>
+          <p className={styles.subtitle}>Confirmá el código antes de entregar el premio al socio.</p>
         </div>
+      </header>
 
-        {!resultado && (
-          <div>
-            {cameraActiva ? (
-              <button
-                type="button"
-                onClick={stopCamera}
-                className="px-3 py-1.5 rounded-xl bg-[#150c0e] hover:bg-[#1f1013] text-[#f5ede6]/70 hover:text-white border border-[#5c131d]/30 text-xs font-semibold flex items-center gap-1.5 transition"
-              >
-                <Keyboard className="w-3.5 h-3.5 text-[#d4aa58]" />
-                <span>Usar Teclado</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={startCamera}
-                disabled={iniciandoCamara}
-                className="px-3 py-1.5 rounded-xl bg-[#5c131d] hover:bg-[#731925] text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-[#5c131d]/30 transition"
-              >
-                {iniciandoCamara ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Camera className="w-3.5 h-3.5 text-[#d4aa58]" />
-                )}
-                <span>Activar Cámara</span>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Pantalla de Éxito al Validar */}
       {resultado ? (
-        <div className="bg-[#150c0e] border border-emerald-500/40 rounded-3xl p-6 text-center space-y-4 animate-in zoom-in-95 shadow-2xl">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
-            <CheckCircle2 className="w-10 h-10" />
+        <div className={styles.success} role="status">
+          <div className={styles.successIcon}><CheckCircle2 size={30} aria-hidden="true" /></div>
+          <div>
+            <p className={styles.successEyebrow}>CANJE APROBADO</p>
+            <h3>Entregá: {resultado.premio}</h3>
+            <p>Se debitaron {resultado.puntosDebitado} puntos del saldo del socio.</p>
           </div>
-
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              ¡Canje Aprobado!
-            </span>
-            <h3 className="text-2xl font-bold text-white pt-2 font-serif">
-              Entregar: {resultado.premio}
-            </h3>
-            <p className="text-xs text-[#f5ede6]/70">
-              Se debitaron{" "}
-              <span className="font-mono font-bold text-[#d4aa58]">
-                {resultado.puntosDebitado} puntos
-              </span>{" "}
-              correctamente.
-            </p>
-          </div>
-
-          <div className="bg-[#050304] rounded-2xl p-4 border border-[#5c131d]/25 text-xs text-[#f5ede6]/80 space-y-2 text-left">
-            <div className="flex justify-between items-center pb-2 border-b border-[#5c131d]/15">
-              <span className="text-[#f5ede6]/50">Socio Titular:</span>
-              <span className="font-semibold text-white">{resultado.socio.nombre}</span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-[#5c131d]/15">
-              <span className="text-[#f5ede6]/50">DNI:</span>
-              <span className="font-mono font-semibold text-[#f5ede6]">{resultado.socio.dni}</span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-[#5c131d]/15">
-              <span className="text-[#f5ede6]/50">Código Validado:</span>
-              <span className="font-mono font-bold text-[#d4aa58]">{resultado.codigoQR}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[#f5ede6]/50">Nuevo Saldo del Socio:</span>
-              <span className="font-mono font-bold text-[#d4aa58]">
-                {resultado.socio.nuevoSaldo} pts
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleReset}
-            className="w-full py-3.5 bg-[#5c131d] hover:bg-[#731925] text-white font-bold rounded-2xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-[#5c131d]/30"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>Validar otro cupón</span>
-          </button>
+          <dl className={styles.details}>
+            <div><dt>Socio</dt><dd>{resultado.socio.nombre}</dd></div>
+            <div><dt>DNI</dt><dd>{resultado.socio.dni}</dd></div>
+            <div><dt>Código validado</dt><dd>{resultado.codigoQR}</dd></div>
+            <div><dt>Nuevo saldo</dt><dd>{resultado.socio.nuevoSaldo} pts</dd></div>
+          </dl>
+          <button type="button" className={styles.primaryButton} onClick={handleReset}><RotateCcw size={17} aria-hidden="true" />Validar otro cupón</button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {/* Alertas de Error */}
-          {errorMessage && (
-            <div className="bg-[#3a0b12]/70 border border-red-800/80 text-red-200 p-4 rounded-2xl text-xs flex items-start gap-2.5 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span className="font-semibold">Atención: </span>
-                <span>{errorMessage}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setErrorMessage(null)}
-                className="text-red-400 hover:text-red-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+        <>
+          {errorMessage && <div className={styles.error} role="alert"><AlertCircle size={18} aria-hidden="true" /><p>{errorMessage}</p><button type="button" onClick={() => setErrorMessage(null)} aria-label="Cerrar aviso"><X size={17} /></button></div>}
+          {cameraError && <div className={styles.error} role="alert"><CameraOff size={18} aria-hidden="true" /><p>{cameraError}</p><button type="button" onClick={() => setCameraError(null)} aria-label="Cerrar aviso de cámara"><X size={17} /></button></div>}
 
-          {cameraError && (
-            <div className="bg-[#3a0b12]/70 border border-red-800/80 text-red-200 p-4 rounded-2xl text-xs flex items-start gap-2.5 animate-in fade-in">
-              <CameraOff className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span>{cameraError}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCameraError(null)}
-                className="text-red-400 hover:text-red-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {/* MODO 1: CÁMARA EN VIVO */}
           {cameraActiva ? (
-            <div className="space-y-4 animate-in fade-in">
-              <div className="relative bg-[#010101] border-2 border-[#5c131d]/60 rounded-3xl overflow-hidden p-2 shadow-2xl">
-                {/* Target Container para html5-qrcode */}
-                <div id="qr-reader-target" className="w-full rounded-2xl overflow-hidden min-h-[280px]" />
-
-                {iniciandoCamara && (
-                  <div className="absolute inset-0 bg-[#010101]/90 flex flex-col items-center justify-center gap-2.5 text-[#f5ede6]">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#d4aa58]" />
-                    <p className="text-xs font-semibold">Iniciando cámara de la tablet...</p>
-                  </div>
-                )}
-
-                {validando && (
-                  <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2.5 text-white">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#5c131d]" />
-                    <p className="text-sm font-bold">Validando cupón detectado...</p>
-                  </div>
-                )}
+            <div className={styles.cameraView}>
+              <div className={styles.readerFrame}>
+                <div id="qr-reader-target" className={styles.readerTarget} />
+                {iniciandoCamara && <div className={styles.readerOverlay}><Loader2 className="animate-spin" size={28} /><span>Iniciando cámara…</span></div>}
+                {validando && <div className={styles.readerOverlay}><Loader2 className="animate-spin" size={28} /><span>Validando cupón…</span></div>}
               </div>
-
-              <div className="text-center space-y-2">
-                <p className="text-xs text-[#f5ede6]/60">
-                  Apunta la cámara de la tablet al <strong className="text-white">código QR</strong> en la pantalla del socio.
-                </p>
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="px-4 py-2 rounded-xl bg-[#150c0e] hover:bg-[#1f1013] text-[#f5ede6]/70 hover:text-white border border-[#5c131d]/30 text-xs font-semibold inline-flex items-center gap-1.5 transition"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Cancelar Escáner</span>
-                </button>
+              <div className={styles.cameraFooter}>
+                <p>Apuntá la cámara al QR en la pantalla del socio.</p>
+                <button type="button" className={styles.secondaryButton} onClick={stopCamera}><Keyboard size={16} aria-hidden="true" />Usar código manual</button>
               </div>
             </div>
           ) : (
-            /* MODO 2: ENTRADA MANUAL O CON TECLADO */
-            <form onSubmit={handleValidarSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#f5ede6]/80 mb-2 flex items-center justify-between">
-                  <span>Código Alfanumérico del Cupón</span>
-                  <span className="text-[10px] text-[#f5ede6]/40 font-normal">
-                    O pulsa &quot;Activar Cámara&quot; arriba
-                  </span>
-                </label>
-                <div className="relative">
+            <div className={styles.methods}>
+              <form onSubmit={handleValidarSubmit} className={styles.codePanel}>
+                <p className={styles.methodEyebrow}>01 / INGRESO MANUAL</p>
+                <h3>Ingresá el código</h3>
+                <label htmlFor="codigo-cupon">Código del cupón</label>
+                <div className={styles.inputWrap}>
                   <input
+                    id="codigo-cupon"
                     ref={inputRef}
                     type="text"
                     value={codigo}
-                    onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-                    placeholder="EJ: CANJE-8F2B9M o 8F2B9M"
-                    autoFocus
-                    className="w-full bg-[#050304] border-2 border-[#5c131d]/30 focus:border-[#5c131d] rounded-2xl px-4 py-4 text-center font-mono font-extrabold text-2xl text-[#d4aa58] tracking-wider placeholder-[#f5ede6]/20 outline-none uppercase shadow-inner transition"
+                    onChange={(event) => setCodigo(event.target.value.toUpperCase())}
+                    placeholder="CANJE-8F2B9M"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    aria-describedby="codigo-help"
+                    className={styles.codeInput}
                   />
-                  {codigo && (
-                    <button
-                      type="button"
-                      onClick={() => setCodigo("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-[#f5ede6]/40 hover:text-white"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
+                  {codigo && <button type="button" className={styles.clearButton} onClick={() => setCodigo("")} aria-label="Borrar código"><X size={18} /></button>}
                 </div>
-                <p className="text-[11px] text-[#f5ede6]/40 mt-2 text-center">
-                  Puedes ingresar el código completo con el prefijo &quot;CANJE-&quot; o únicamente los caracteres finales.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={startCamera}
-                  className="py-3.5 bg-[#150c0e] hover:bg-[#1f1013] text-[#f5ede6] font-bold rounded-2xl text-sm border border-[#5c131d]/40 transition flex items-center justify-center gap-2 shadow-md"
-                >
-                  <Camera className="w-4 h-4 text-[#d4aa58]" />
-                  <span>Escanear QR con Cámara</span>
+                <p id="codigo-help" className={styles.help}>Podés ingresar el código completo o solo los caracteres finales.</p>
+                <button type="submit" disabled={validando || !codigo.trim()} className={styles.primaryButton}>
+                  {validando ? <Loader2 className="animate-spin" size={17} aria-hidden="true" /> : <CheckCircle2 size={17} aria-hidden="true" />}
+                  {validando ? "Validando…" : "Validar cupón"}
                 </button>
-
-                <button
-                  type="submit"
-                  disabled={validando || !codigo.trim()}
-                  className="py-3.5 bg-[#5c131d] hover:bg-[#731925] disabled:opacity-40 text-white font-bold rounded-2xl text-sm shadow-xl shadow-[#5c131d]/30 transition flex items-center justify-center gap-2"
-                >
-                  {validando ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-4 h-4" />
-                  )}
-                  <span>{validando ? "Validando..." : "Validar Cupón"}</span>
+              </form>
+              <div className={styles.cameraPanel}>
+                <p className={styles.methodEyebrow}>02 / ESCANEO</p>
+                <div className={styles.cameraIcon}><Camera size={27} strokeWidth={1.6} aria-hidden="true" /></div>
+                <h3>Escaneá el QR</h3>
+                <p>Usá la cámara para leer el cupón desde la pantalla del socio.</p>
+                <button type="button" className={styles.secondaryButton} onClick={startCamera} disabled={iniciandoCamara}>
+                  {iniciandoCamara ? <Loader2 className="animate-spin" size={16} aria-hidden="true" /> : <Camera size={16} aria-hidden="true" />}
+                  {iniciandoCamara ? "Abriendo cámara…" : "Abrir cámara"}
                 </button>
               </div>
-            </form>
+            </div>
           )}
-        </div>
+        </>
       )}
-    </div>
+    </section>
   );
 }

@@ -6,6 +6,12 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Iniciando carga de datos iniciales (seed)...");
 
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const mozoPassword = process.env.SEED_MOZO_PASSWORD;
+  if (!adminPassword || adminPassword.length < 12 || !mozoPassword || mozoPassword.length < 12) {
+    throw new Error("Configurá SEED_ADMIN_PASSWORD y SEED_MOZO_PASSWORD (12 caracteres o más) antes de ejecutar el seed.");
+  }
+
   // 1. Configuracion de Puntos
   const existingConfig = await prisma.configuracionPuntos.findFirst();
   if (!existingConfig) {
@@ -21,8 +27,8 @@ async function main() {
   }
 
   // 2. Usuarios del Restaurante
-  const passwordAdmin = await bcrypt.hash("admin123", 10);
-  const passwordMozo = await bcrypt.hash("mozo123", 10);
+  const passwordAdmin = await bcrypt.hash(adminPassword, 10);
+  const passwordMozo = await bcrypt.hash(mozoPassword, 10);
 
   await prisma.usuario.upsert({
     where: { username: "admin" },
@@ -30,7 +36,7 @@ async function main() {
     create: {
       username: "admin",
       nombre: "Administrador General",
-      role: RolUsuario.ADMIN,
+      role: RolUsuario.SUPER_ADMIN,
       passwordHash: passwordAdmin,
     },
   });
@@ -41,13 +47,15 @@ async function main() {
     create: {
       username: "mozo1",
       nombre: "Martín Mozo",
-      role: RolUsuario.MOZO,
+      role: RolUsuario.EQUIPO,
       passwordHash: passwordMozo,
     },
   });
   console.log("Usuarios de personal (admin, mozo1) listos.");
 
-  // 3. Premios Iniciales
+  // 3. Datos de demostración: nunca se cargan por defecto.
+  if (process.env.SEED_DEMO_DATA === "true") {
+  // Premios Iniciales
   const premiosData = [
     {
       titulo: "Postre de la Casa a elección",
@@ -99,6 +107,7 @@ async function main() {
     },
   });
   console.log("Socio de prueba (DNI: 12345678) listo.");
+  }
 
   console.log("Seed completado exitosamente.");
 }

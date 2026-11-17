@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, Award, Calendar } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { CONTENT } from "@/data/landing-content";
 
 interface NavbarProps {
@@ -15,214 +15,97 @@ interface NavbarProps {
 export default function Navbar({ lang, setLang, onOpenReservation }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const t = CONTENT[lang].nav;
+  const links = [
+    { href: "#filosofia", label: t.philosophy },
+    { href: "#cava", label: t.cava },
+    { href: "#carta", label: t.cuisine },
+    { href: "#ubicacion", label: t.hours },
+  ];
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 30);
+    const handleScroll = () => setScrolled(window.scrollY > 30);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    const wide = window.matchMedia("(min-width: 1280px)");
+    const closeOnWide = () => { if (wide.matches) setMobileMenuOpen(false); };
+    wide.addEventListener("change", closeOnWide);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      wide.removeEventListener("change", closeOnWide);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const reserve = () => {
+    if (mobileMenuOpen) menuButton.current?.focus();
+    setMobileMenuOpen(false);
+    onOpenReservation();
+  };
+  const languageSwitch = (
+    <button
+      type="button"
+      onClick={() => setLang(lang === "es" ? "en" : "es")}
+      aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
+      className="min-h-11 min-w-11 px-3 text-xs text-champagne-warm border border-white/20 hover:border-gold-points transition"
+    >
+      {lang === "es" ? "EN" : "ES"}
+    </button>
+  );
+
   return (
-    <>
-      <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
-          scrolled
-            ? "bg-[#111011]/95 backdrop-blur-md py-4 border-b border-white/[0.06] shadow-xl"
-            : "bg-gradient-to-b from-[#111011]/90 via-[#111011]/40 to-transparent py-6"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 flex items-center justify-between">
-          {/* Left Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center space-x-10">
-            <a
-              href="#filosofia"
-              className="text-xs uppercase tracking-[0.2em] text-[#d5cfc7] hover:text-white transition duration-300 font-light"
-            >
-              {t.philosophy}
-            </a>
-            <a
-              href="#cava"
-              className="text-xs uppercase tracking-[0.2em] text-[#d5cfc7] hover:text-white transition duration-300 font-light"
-            >
-              {t.cava}
-            </a>
-            <a
-              href="#carta"
-              className="text-xs uppercase tracking-[0.2em] text-[#d5cfc7] hover:text-white transition duration-300 font-light"
-            >
-              {t.cuisine}
-            </a>
-          </nav>
-
-          {/* Center Brand Identity (Single clean logo & typography) */}
-          <Link
-            href="/"
-            className="flex flex-col items-center text-center group cursor-pointer transition-transform duration-300"
+    <header
+      className={`fixed inset-x-0 top-0 z-40 border-b transition-colors duration-200 motion-reduce:transition-none ${scrolled || mobileMenuOpen ? "bg-bistro-card border-white/10" : "bg-bistro-canvas/90 border-transparent"}`}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && mobileMenuOpen) {
+          setMobileMenuOpen(false);
+          menuButton.current?.focus();
+        }
+      }}
+    >
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-3 shrink-0" aria-label="La Encontrada — inicio">
+          <Image src="/logo.png" alt="" width={40} height={40} priority className="object-contain" />
+          <span>
+            <span className="block font-serif text-2xl text-champagne-warm leading-none">La Encontrada</span>
+            <span className="block mt-2 text-[10px] tracking-[0.14em] uppercase text-gold-points">Wine Bistro · El Bolsón</span>
+          </span>
+        </Link>
+        <nav aria-label={lang === "es" ? "Navegación principal" : "Main navigation"} className="hidden xl:flex items-center gap-5">
+          {links.map((link) => (
+            <a key={link.href} href={link.href} className="py-3 text-xs text-champagne-warm hover:text-gold-points transition whitespace-nowrap">{link.label}</a>
+          ))}
+          <Link href="/socio/login" className="py-3 text-xs text-gold-points whitespace-nowrap">{t.club}</Link>
+        </nav>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden sm:block">{languageSwitch}</div>
+          <button onClick={reserve} className="hidden sm:block min-h-11 px-5 bg-wine-800 hover:bg-wine-700 text-white text-sm transition whitespace-nowrap">{t.reserve}</button>
+          <button
+            ref={menuButton}
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? (lang === "es" ? "Cerrar menú" : "Close menu") : (lang === "es" ? "Abrir menú" : "Open menu")}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
+            className="xl:hidden min-w-11 min-h-11 flex items-center justify-center text-champagne-warm border border-white/20"
           >
-            <div className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="La Encontrada Wine Bistro"
-                width={36}
-                height={36}
-                priority
-                className="object-contain transition-opacity duration-300 group-hover:opacity-90"
-              />
-              <div className="text-left">
-                <span className="font-serif text-xl sm:text-2xl tracking-[0.08em] text-[#f5f2eb] font-normal block leading-tight">
-                  La Encontrada
-                </span>
-                <span className="text-[9px] uppercase tracking-[0.3em] text-[#c5a880] block font-light">
-                  Wine Bistro • El Bolsón
-                </span>
-              </div>
-            </div>
-          </Link>
-
-          {/* Right Navigation & CTAs (Desktop) */}
-          <div className="hidden lg:flex items-center space-x-8">
-            <a
-              href="#ubicacion"
-              className="text-xs uppercase tracking-[0.2em] text-[#d5cfc7] hover:text-white transition duration-300 font-light"
-            >
-              {t.hours}
-            </a>
-
-            {/* Club de Socios minimal link */}
-            <Link
-              href="/socio/login"
-              className="text-xs uppercase tracking-[0.2em] text-[#c5a880] hover:text-[#e4cfb5] transition duration-300 font-light"
-              title="Portal de Socios"
-            >
-              {t.club}
-            </Link>
-
-            {/* Language Selector */}
-            <div className="flex items-center border border-white/10 px-2 py-1 text-[11px] font-mono tracking-wider">
-              <button
-                onClick={() => setLang("es")}
-                className={`px-1.5 transition ${
-                  lang === "es" ? "text-white font-medium" : "text-stone-500 hover:text-stone-300"
-                }`}
-              >
-                ES
-              </button>
-              <span className="text-stone-600">/</span>
-              <button
-                onClick={() => setLang("en")}
-                className={`px-1.5 transition ${
-                  lang === "en" ? "text-white font-medium" : "text-stone-500 hover:text-stone-300"
-                }`}
-              >
-                EN
-              </button>
-            </div>
-
-            {/* Rectangular Luxury CTA Button */}
-            <button
-              onClick={onOpenReservation}
-              className="bg-[#4a151b] hover:bg-[#5a1b23] text-[#f5f2eb] text-xs uppercase tracking-[0.2em] font-medium px-6 py-3 transition duration-300 cursor-pointer border border-[#5a1b23]/50"
-            >
-              {t.reserve}
-            </button>
-          </div>
-
-          {/* Mobile Right Controls */}
-          <div className="flex items-center space-x-3 lg:hidden">
-            <button
-              onClick={() => setLang(lang === "es" ? "en" : "es")}
-              className="px-2 py-1 text-[11px] font-mono border border-white/10 text-stone-300 uppercase tracking-widest"
-            >
-              {lang}
-            </button>
-
-            <button
-              onClick={onOpenReservation}
-              className="bg-[#4a151b] text-[#f5f2eb] text-[11px] uppercase tracking-[0.15em] px-3.5 py-2 font-medium"
-            >
-              {t.reserve}
-            </button>
-
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-stone-300 hover:text-white"
-              aria-label="Menú"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+      <nav id="mobile-navigation" hidden={!mobileMenuOpen} aria-label={lang === "es" ? "Navegación móvil" : "Mobile navigation"} className="xl:hidden border-t border-white/10 max-h-[calc(100dvh-6rem)] overflow-y-auto px-5 py-5 bg-bistro-card">
+        <div className="max-w-xl mx-auto flex flex-col">
+          {links.map((link) => (
+            <a key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)} className="py-3 text-lg text-champagne-warm hover:text-gold-points">{link.label}</a>
+          ))}
+          <Link href="/socio/login" onClick={() => setMobileMenuOpen(false)} className="py-3 text-lg text-gold-points">{t.club}</Link>
+          <Link href="/links" onClick={() => setMobileMenuOpen(false)} className="py-3 text-sm text-champagne-muted">{lang === "es" ? "Contacto y redes" : "Contact & social"}</Link>
+          <div className="flex items-center gap-3 mt-4 pt-5 border-t border-white/10">
+            <button onClick={reserve} className="min-h-12 flex-1 bg-wine-800 hover:bg-wine-700 px-4 text-white text-sm">{t.reserve}</button>
+            <div className="sm:hidden">{languageSwitch}</div>
           </div>
         </div>
-      </header>
-
-      {/* Mobile Overlay Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-30 bg-[#111011]/98 backdrop-blur-xl pt-28 px-8 flex flex-col justify-between pb-10 lg:hidden animate-in fade-in duration-300">
-          <div className="space-y-6">
-            <nav className="flex flex-col space-y-5 border-t border-white/10 pt-6">
-              <a
-                href="#filosofia"
-                onClick={() => setMobileMenuOpen(false)}
-                className="font-serif text-2xl text-[#f5f2eb] font-light tracking-wide"
-              >
-                {t.philosophy}
-              </a>
-              <a
-                href="#cava"
-                onClick={() => setMobileMenuOpen(false)}
-                className="font-serif text-2xl text-[#f5f2eb] font-light tracking-wide"
-              >
-                {t.cava}
-              </a>
-              <a
-                href="#carta"
-                onClick={() => setMobileMenuOpen(false)}
-                className="font-serif text-2xl text-[#f5f2eb] font-light tracking-wide"
-              >
-                {t.cuisine}
-              </a>
-              <a
-                href="#ubicacion"
-                onClick={() => setMobileMenuOpen(false)}
-                className="font-serif text-2xl text-[#f5f2eb] font-light tracking-wide"
-              >
-                {t.hours}
-              </a>
-              <Link
-                href="/links"
-                onClick={() => setMobileMenuOpen(false)}
-                className="font-serif text-2xl text-[#c5a880] font-light tracking-wide"
-              >
-                Bio-Links & Redes
-              </Link>
-              <Link
-                href="/socio/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="font-serif text-2xl text-[#c5a880] font-light tracking-wide"
-              >
-                {t.club}
-              </Link>
-            </nav>
-          </div>
-
-          <div className="space-y-4 pt-6 border-t border-white/10 text-center">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenReservation();
-              }}
-              className="w-full bg-[#4a151b] text-[#f5f2eb] py-4 uppercase tracking-[0.2em] text-xs font-medium"
-            >
-              {t.reserve}
-            </button>
-            <p className="text-stone-500 text-xs font-mono tracking-wider">
-              Callejón Cerro Amigo • El Bolsón, Patagonia
-            </p>
-          </div>
-        </div>
-      )}
-    </>
+      </nav>
+    </header>
   );
 }

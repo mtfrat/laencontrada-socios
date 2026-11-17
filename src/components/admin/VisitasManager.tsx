@@ -14,9 +14,6 @@ import {
   Loader2,
   X,
   User,
-  Calendar,
-  DollarSign,
-  FileText,
 } from "lucide-react";
 
 interface PlatoItem {
@@ -94,24 +91,21 @@ export default function VisitasManager() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchVisitas = async () => {
-    setLoading(true);
-    try {
-      const q = searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : "";
-      const res = await fetch(`/api/visitas${q}`);
-      const data = await res.json();
-      if (data.success) {
-        setVisitas(data.visitas);
-      }
-    } catch {
-      // Silencioso
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchVisitas();
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      const q = searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : "";
+      try {
+        const res = await fetch(`/api/visitas${q}`, { signal: controller.signal });
+        const data = await res.json();
+        if (!controller.signal.aborted && data.success) setVisitas(data.visitas);
+      } catch {
+        // Una búsqueda reemplazada cancela la solicitud anterior.
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, searchQuery ? 250 : 0);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [searchQuery]);
 
   const openEditModal = (visita: VisitaItem) => {
@@ -218,7 +212,7 @@ export default function VisitasManager() {
             type="text"
             placeholder="Buscar por DNI o Nombre del socio..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setLoading(true); setSearchQuery(e.target.value); }}
             className="w-full pl-10 pr-4 py-2.5 bg-[#050304] border border-[#5c131d]/30 rounded-xl text-sm text-[#f5ede6] placeholder:text-[#f5ede6]/30 focus:outline-none focus:border-[#5c131d] focus:ring-1 focus:ring-[#5c131d]/40 transition"
           />
         </div>
@@ -241,7 +235,7 @@ export default function VisitasManager() {
           <Utensils className="w-10 h-10 mx-auto text-[#5c131d]/40 mb-3" />
           <p className="text-base font-semibold text-white">No hay visitas registradas aún</p>
           <p className="text-xs text-[#f5ede6]/40 mt-1 max-w-sm mx-auto">
-            A medida que los mozos carguen consumos de mesas en la terminal, aparecerán aquí para detallar platos y asociar tickets.
+            A medida que el equipo carguen consumos de mesas en la terminal, aparecerán aquí para detallar platos y asociar tickets.
           </p>
         </div>
       ) : (

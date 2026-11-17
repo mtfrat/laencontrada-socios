@@ -8,11 +8,8 @@ import {
   Users,
   Utensils,
   Award,
-  Sparkles,
-  ArrowUpRight,
   Gift,
   Clock,
-  CheckCircle2,
   Calendar,
   Percent,
   Coins,
@@ -74,41 +71,47 @@ export default function AdminMetricsDashboard({ data }: { data: MetricsData }) {
   return (
     <div className="space-y-6">
       {/* Selector de Pestañas de Métricas */}
-      <div className="flex items-center gap-2 border-b border-[#5c131d]/25 pb-2">
+      <div className="grid grid-cols-3 gap-2 border-b border-[#5c131d]/25 pb-2" role="group" aria-label="Ver métricas de">
         <button
           onClick={() => setActiveTab("general")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          aria-pressed={activeTab === "general"}
+          aria-label="Métricas de salón"
+          className={`min-h-11 justify-center px-2 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
             activeTab === "general"
               ? "bg-[#5c131d] text-white shadow-lg shadow-[#5c131d]/30"
               : "bg-[#0d0708] text-[#f5ede6]/60 hover:text-white border border-[#5c131d]/20"
           }`}
         >
           <BarChart3 className="w-3.5 h-3.5" />
-          <span>Finanzas & Salón</span>
+          <span>Salón</span>
         </button>
 
         <button
           onClick={() => setActiveTab("fidelizacion")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          aria-pressed={activeTab === "fidelizacion"}
+          aria-label="Métricas de puntos"
+          className={`min-h-11 justify-center px-2 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
             activeTab === "fidelizacion"
               ? "bg-[#5c131d] text-white shadow-lg shadow-[#5c131d]/30"
               : "bg-[#0d0708] text-[#f5ede6]/60 hover:text-white border border-[#5c131d]/20"
           }`}
         >
           <Coins className="w-3.5 h-3.5" />
-          <span>Motor de Puntos</span>
+          <span>Puntos</span>
         </button>
 
         <button
           onClick={() => setActiveTab("habitos")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          aria-pressed={activeTab === "habitos"}
+          aria-label="Métricas de premios y turnos"
+          className={`min-h-11 justify-center px-2 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
             activeTab === "habitos"
               ? "bg-[#5c131d] text-white shadow-lg shadow-[#5c131d]/30"
               : "bg-[#0d0708] text-[#f5ede6]/60 hover:text-white border border-[#5c131d]/20"
           }`}
         >
           <Flame className="w-3.5 h-3.5" />
-          <span>Premios & Turnos</span>
+          <span>Premios</span>
         </button>
       </div>
 
@@ -116,11 +119,11 @@ export default function AdminMetricsDashboard({ data }: { data: MetricsData }) {
       {activeTab === "general" && (
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Fila 1: 4 KPIs Principales */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
             {/* Facturación Registrada */}
-            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
+            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-[#f5ede6]/50 font-semibold">
+                <span className="text-xs font-medium text-stone-300 sm:text-sm">
                   Facturación en Mesas
                 </span>
                 <div className="w-8 h-8 rounded-xl bg-[#5c131d]/20 text-[#d4aa58] border border-[#5c131d]/30 flex items-center justify-center">
@@ -128,10 +131,10 @@ export default function AdminMetricsDashboard({ data }: { data: MetricsData }) {
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-2xl lg:text-3xl font-bold font-mono text-[#d4aa58]">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-bold font-mono text-[#d4aa58]">
                   ${financials.totalFacturado.toLocaleString("es-AR")}
                 </p>
-                <p className="text-[11px] text-[#f5ede6]/40 mt-1 flex items-center gap-1">
+                <p className="mt-1 flex items-center gap-1 text-xs text-stone-400">
                   <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                   <span>En {financials.totalVisitas} visitas de socios</span>
                 </p>
@@ -139,9 +142,9 @@ export default function AdminMetricsDashboard({ data }: { data: MetricsData }) {
             </div>
 
             {/* Ticket Promedio por Mesa */}
-            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
+            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-[#f5ede6]/50 font-semibold">
+                <span className="text-xs font-medium text-stone-300 sm:text-sm">
                   Ticket Promedio / Mesa
                 </span>
                 <div className="w-8 h-8 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center">
@@ -149,39 +152,39 @@ export default function AdminMetricsDashboard({ data }: { data: MetricsData }) {
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-2xl lg:text-3xl font-bold font-mono text-white">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-bold font-mono text-white">
                   ${financials.ticketPromedio.toLocaleString("es-AR")}
                 </p>
-                <p className="text-[11px] text-[#f5ede6]/40 mt-1">
+                <p className="mt-1 text-xs text-stone-400">
                   Consumo promedio por comanda
                 </p>
               </div>
             </div>
 
             {/* Gasto Promedio por Comensal */}
-            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
+            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-[#f5ede6]/50 font-semibold">
-                  Gasto Promedio Per Cápita
+                <span className="text-xs font-medium text-stone-300 sm:text-sm">
+                  Gasto Promedio por Persona
                 </span>
                 <div className="w-8 h-8 rounded-xl bg-[#d4aa58]/15 text-[#d4aa58] border border-[#d4aa58]/30 flex items-center justify-center">
                   <Percent className="w-4 h-4" />
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-2xl lg:text-3xl font-bold font-mono text-[#d4aa58]">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-bold font-mono text-[#d4aa58]">
                   ${financials.gastoPromedioComensal.toLocaleString("es-AR")}
                 </p>
-                <p className="text-[11px] text-[#f5ede6]/40 mt-1">
+                <p className="mt-1 text-xs text-stone-400">
                   Gasto individual por persona
                 </p>
               </div>
             </div>
 
             {/* Comensales Atendidos */}
-            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-3xl p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
+            <div className="bg-[#0d0708] border border-[#5c131d]/30 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-xl flex flex-col justify-between group hover:border-[#5c131d]/60 transition">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-[#f5ede6]/50 font-semibold">
+                <span className="text-xs font-medium text-stone-300 sm:text-sm">
                   Comensales Fidelizados
                 </span>
                 <div className="w-8 h-8 rounded-xl bg-[#5c131d]/20 text-[#e18693] border border-[#5c131d]/40 flex items-center justify-center">
@@ -189,10 +192,10 @@ export default function AdminMetricsDashboard({ data }: { data: MetricsData }) {
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-2xl lg:text-3xl font-bold font-mono text-white">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-bold font-mono text-white">
                   {financials.totalComensales.toLocaleString("es-AR")}
                 </p>
-                <p className="text-[11px] text-[#f5ede6]/40 mt-1">
+                <p className="mt-1 text-xs text-stone-400">
                   Personas en mesas registradas
                 </p>
               </div>
@@ -554,7 +557,7 @@ export default function AdminMetricsDashboard({ data }: { data: MetricsData }) {
             <div className="p-3 bg-[#150c0e] rounded-2xl border border-[#5c131d]/20 text-xs text-[#f5ede6]/60 flex items-center gap-2 mt-4">
               <Calendar className="w-4 h-4 text-[#ce7281] shrink-0" />
               <span>
-                Los mozos registran automáticamente la franja horaria de cada mesa desde la terminal de salón.
+                El equipo registran automáticamente la franja horaria de cada mesa desde la terminal de salón.
               </span>
             </div>
           </div>

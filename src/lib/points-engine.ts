@@ -30,23 +30,27 @@ export function calculateTablePoints(
 ): TablePointsCalculationResult {
   const { totalTicket, guestCount, pesosPorPunto } = params;
 
-  if (totalTicket <= 0) {
+  if (!Number.isFinite(totalTicket) || totalTicket <= 0) {
     throw new Error("El monto total del ticket debe ser mayor a 0.");
   }
 
-  if (guestCount < 1) {
+  if (!Number.isInteger(guestCount) || guestCount < 1) {
     throw new Error("La cantidad de comensales debe ser al menos 1.");
   }
 
-  if (pesosPorPunto <= 0) {
+  if (!Number.isFinite(pesosPorPunto) || pesosPorPunto <= 0) {
     throw new Error("El ratio de pesos por punto debe ser mayor a 0.");
   }
 
-  // 1. Gasto promedio por persona
-  const gastoPromedioPorPersona = Math.round((totalTicket / guestCount) * 100) / 100;
+  // Trabajar en centavos evita regalar puntos por redondear el promedio hacia arriba.
+  const ticketCentavos = Math.round(totalTicket * 100);
+  const ratioCentavos = Math.round(pesosPorPunto * 100);
+  if (ratioCentavos < 1) throw new Error("El ratio de pesos por punto debe ser mayor a 0.");
+  const gastoIndividualCentavos = Math.floor(ticketCentavos / guestCount);
+  const gastoPromedioPorPersona = gastoIndividualCentavos / 100;
 
   // 2. Puntos a acreditar a cada socio de la mesa
-  const puntosPorSocio = Math.floor(gastoPromedioPorPersona / pesosPorPunto);
+  const puntosPorSocio = Math.floor(gastoIndividualCentavos / ratioCentavos);
 
   return {
     gastoPromedioPorPersona,

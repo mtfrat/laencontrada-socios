@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireSocioSession } from "@/lib/guards";
 import { ApiError, errorResponse } from "@/lib/api-error";
+import { readJsonBody, validate } from "@/lib/validation";
 import { CanjePremio, EstadoCanje } from "@prisma/client";
 
 function generateCouponCode(): string {
@@ -36,19 +38,16 @@ export async function POST(request: Request) {
     if (!auth.ok) return auth.response;
     const session = auth.session;
 
-    const body = await request.json();
-    const { premioId } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
 
-    if (!premioId || typeof premioId !== "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "PREMIO_REQUERIDO",
-          error: "El ID del premio es requerido.",
-        },
-        { status: 400 }
-      );
-    }
+    const premioParsed = validate(
+      z.string({ error: "El ID del premio es requerido." }).min(1, "El ID del premio es requerido."),
+      (bodyParsed.data as { premioId?: unknown } | null)?.premioId,
+      { code: "PREMIO_REQUERIDO", requiredCode: "PREMIO_REQUERIDO" }
+    );
+    if (!premioParsed.ok) return premioParsed.response;
+    const premioId = premioParsed.data;
 
     const socio = await prisma.socio.findUnique({
       where: { id: session.id },
@@ -77,7 +76,7 @@ export async function POST(request: Request) {
       data: { estado: EstadoCanje.EXPIRADO },
     });
 
-    const premio = await prisma.premio.findUnique({ where: { id: premioId } });
+    const premio = await prisma.premio.findUnique({ where: { id: premioId }, select: { id: true, titulo: true, activo: true, stock: true, puntosRequeridos: true } });
 
     if (!premio || !premio.activo) {
       return NextResponse.json(
@@ -134,14 +133,14 @@ export async function POST(request: Request) {
               estado: EstadoCanje.PENDIENTE,
               fechaExpiracion: { gt: now },
             },
-            include: { premio: true },
+            include: { premio: { select: { titulo: true } } },
           });
 
           if (pendiente) {
             throw new ApiError(
               400,
               "CANJE_PENDIENTE",
-              `Ya tienes un cupón pendiente para "${pendiente.premio.titulo}". Debes validarlo con el mozo o cancelarlo antes de solicitar otro.`,
+              `Ya tienes un cupón pendiente para "${pendiente.premio.titulo}". Debes validarlo con el equipo o cancelarlo antes de solicitar otro.`,
               { canjePendienteId: pendiente.id }
             );
           }
@@ -158,7 +157,7 @@ export async function POST(request: Request) {
 
             if (stockOk.count === 0) {
               const actualPremio = await tx.premio.findUnique({
-                where: { id: premio.id },
+                where: { id: premio.id }, select: { activo: true },
               });
               if (!actualPremio || !actualPremio.activo) {
                 throw new ApiError(
@@ -212,7 +211,7 @@ export async function POST(request: Request) {
       codigoQR: canje.codigoQR,
       fechaExpiracion: canje.fechaExpiracion,
       message:
-        "Cupón generado exitosamente. Tienes 15 minutos para presentarlo a tu mozo.",
+        `Cupón generado exitosamente. Tenés ${minutos} minutos para presentarlo al equipo.`,
     });
   } catch (error) {
     if (error instanceof ApiError) {

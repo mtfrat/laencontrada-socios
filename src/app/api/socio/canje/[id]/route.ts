@@ -14,7 +14,7 @@ export async function GET(
 
     const { id } = await params;
 
-    const canje = await prisma.canjePremio.findUnique({
+    let canje = await prisma.canjePremio.findUnique({
       where: { id },
       include: {
         premio: {
@@ -45,18 +45,31 @@ export async function GET(
     let estadoActual = canje.estado;
 
     // Si está pendiente y ya expiró, actualizar en BD
-    if (estadoActual === EstadoCanje.PENDIENTE && now > canje.fechaExpiracion) {
-      await prisma.canjePremio.update({
-        where: { id: canje.id },
+    if (estadoActual === EstadoCanje.PENDIENTE && now >= canje.fechaExpiracion) {
+      const expired = await prisma.canjePremio.updateMany({
+        where: { id: canje.id, estado: EstadoCanje.PENDIENTE, fechaExpiracion: { lte: now } },
         data: { estado: EstadoCanje.EXPIRADO },
       });
-      estadoActual = EstadoCanje.EXPIRADO;
+      if (expired.count > 0) {
+        estadoActual = EstadoCanje.EXPIRADO;
+      } else {
+        // A waiter may have validated the coupon after our first read.
+        const current = await prisma.canjePremio.findUnique({
+          where: { id },
+          include: { premio: { select: { id: true, titulo: true, descripcion: true, puntosRequeridos: true, imagenUrl: true } }, validadoPor: { select: { nombre: true } } },
+        });
+        if (!current || current.socioId !== session.id) {
+          return NextResponse.json({ success: false, error: "Cupón no encontrado." }, { status: 404 });
+        }
+        canje = current;
+        estadoActual = current.estado;
+      }
     }
 
-    const segundosRestantes = Math.max(
+    const segundosRestantes = estadoActual === EstadoCanje.PENDIENTE ? Math.max(
       0,
       Math.floor((new Date(canje.fechaExpiracion).getTime() - Date.now()) / 1000)
-    );
+    ) : 0;
 
     return NextResponse.json({
       success: true,
@@ -114,10 +127,14 @@ export async function DELETE(
     }
 
     // Cancelar canje y liberar cupón
-    await prisma.canjePremio.update({
-      where: { id },
+    const cancelled = await prisma.canjePremio.updateMany({
+      where: { id, socioId: session.id, estado: EstadoCanje.PENDIENTE },
       data: { estado: EstadoCanje.CANCELADO },
     });
+
+    if (cancelled.count === 0) {
+      return NextResponse.json({ success: false, error: "El cupón cambió de estado. Actualizá la página para consultar el resultado." }, { status: 409 });
+    }
 
     return NextResponse.json({
       success: true,

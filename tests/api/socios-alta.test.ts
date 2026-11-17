@@ -55,8 +55,9 @@ function seed(existing: Array<[string, string, string]> = [["socio-1", "11111111
         id: "staff-1",
         username: "admin1",
         nombre: "Admin",
-        role: "ADMIN",
+        role: "SUPER_ADMIN",
         passwordHash: "hash",
+        activo: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -90,7 +91,7 @@ beforeEach(async () => {
     id: "staff-1",
     username: "admin1",
     nombre: "Admin",
-    role: "ADMIN",
+    role: "SUPER_ADMIN",
   });
   seed();
 });

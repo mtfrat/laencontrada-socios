@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import {
   ArrowLeft,
-  Gift,
   CheckCircle2,
   Clock,
   AlertCircle,
   Loader2,
   Sparkles,
-  QrCode,
   XCircle,
   RotateCcw,
 } from "lucide-react";
@@ -41,7 +39,7 @@ export default function SocioCanjePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const resolvedParams = use(params);
+  const canjeId = use(params).id;
   const router = useRouter();
   const [canje, setCanje] = useState<CanjeDetalle | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
@@ -49,31 +47,15 @@ export default function SocioCanjePage({
   const [loading, setLoading] = useState(true);
   const [cancelando, setCancelando] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const canjeStatus = canje?.estado;
 
-  const fetchCanje = async () => {
+  const fetchCanje = useCallback(async () => {
     try {
-      const res = await fetch(`/api/socio/canje/${resolvedParams.id}`);
+      const res = await fetch(`/api/socio/canje/${canjeId}`);
       const data = await res.json();
       if (data.success) {
         setCanje(data.canje);
         setTimeLeft(data.canje.segundosRestantes);
-
-        // Generar imagen QR con tinte vino elegante
-        if (data.canje.codigoQR && !qrDataUrl) {
-          try {
-            const url = await QRCode.toDataURL(data.canje.codigoQR, {
-              width: 280,
-              margin: 2,
-              color: {
-                dark: "#5c131d",
-                light: "#ffffff",
-              },
-            });
-            setQrDataUrl(url);
-          } catch (qrErr) {
-            console.error("Error generando QR:", qrErr);
-          }
-        }
       } else {
         setErrorMessage(data.error || "No se encontró el cupón.");
       }
@@ -82,19 +64,34 @@ export default function SocioCanjePage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [canjeId]);
 
   useEffect(() => {
-    fetchCanje();
-  }, [resolvedParams.id]);
+    // La consulta actualiza el estado después de recibir la respuesta.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchCanje();
+  }, [fetchCanje]);
+
+  useEffect(() => {
+    if (!canje?.codigoQR) return;
+    let active = true;
+    QRCode.toDataURL(canje.codigoQR, {
+      width: 280,
+      margin: 2,
+      color: { dark: "#5c131d", light: "#ffffff" },
+    }).then((url) => {
+      if (active) setQrDataUrl(url);
+    }).catch((error) => console.error("Error generando QR:", error));
+    return () => { active = false; };
+  }, [canje?.codigoQR]);
 
   // Polling cada 3 segundos si está PENDIENTE
   useEffect(() => {
-    if (!canje || canje.estado !== "PENDIENTE") return;
+    if (canjeStatus !== "PENDIENTE") return;
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/socio/canje/${resolvedParams.id}`);
+        const res = await fetch(`/api/socio/canje/${canjeId}`);
         const data = await res.json();
         if (data.success) {
           setCanje(data.canje);
@@ -106,25 +103,20 @@ export default function SocioCanjePage({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [canje?.estado, resolvedParams.id]);
+  }, [canjeStatus, canjeId]);
 
   // Temporizador regresivo segundo a segundo
   useEffect(() => {
-    if (timeLeft <= 0 || canje?.estado !== "PENDIENTE") return;
+    if (timeLeft <= 0 || canjeStatus !== "PENDIENTE") return;
+    const timer = setTimeout(() => setTimeLeft((prev) => Math.max(0, prev - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [timeLeft, canjeStatus]);
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          fetchCanje();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, canje?.estado]);
+  useEffect(() => {
+    // La consulta de vencimiento actualiza el estado después de recibir la respuesta.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (timeLeft === 0 && canjeStatus === "PENDIENTE") void fetchCanje();
+  }, [timeLeft, canjeStatus, fetchCanje]);
 
   const handleCancelar = async () => {
     if (!confirm("¿Seguro que deseas cancelar este canje? Tus puntos volverán a estar disponibles de inmediato.")) {
@@ -133,7 +125,7 @@ export default function SocioCanjePage({
 
     setCancelando(true);
     try {
-      const res = await fetch(`/api/socio/canje/${resolvedParams.id}`, {
+      const res = await fetch(`/api/socio/canje/${canjeId}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -157,7 +149,7 @@ export default function SocioCanjePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#010101] text-stone-100 flex flex-col items-center justify-center p-4">
+      <div className="member-legacy member-flow min-h-screen bg-[#010101] text-stone-100 flex flex-col items-center justify-center p-4">
         <Loader2 className="w-8 h-8 animate-spin text-[#ce7281] mb-2" />
         <p className="text-xs text-stone-400">Cargando cupón Wine Bistro...</p>
       </div>
@@ -166,7 +158,7 @@ export default function SocioCanjePage({
 
   if (errorMessage || !canje) {
     return (
-      <div className="min-h-screen bg-[#010101] text-stone-100 flex flex-col items-center justify-center p-4 text-center">
+      <div className="member-legacy member-flow min-h-screen bg-[#010101] text-stone-100 flex flex-col items-center justify-center p-4 text-center">
         <AlertCircle className="w-12 h-12 text-red-400 mb-2" />
         <h2 className="text-base font-bold text-white">No se pudo cargar el cupón</h2>
         <p className="text-xs text-stone-400 max-w-xs mt-1">{errorMessage}</p>
@@ -181,7 +173,7 @@ export default function SocioCanjePage({
   }
 
   return (
-    <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
+    <div className="member-legacy member-flow min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Header */}
       <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -218,12 +210,12 @@ export default function SocioCanjePage({
           <div className="bg-[#0d0708] rounded-3xl p-6 border border-emerald-500/40 shadow-2xl text-center space-y-4 animate-in zoom-in-95 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
 
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-lg">
+            <div className="member-canje-success-icon w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-lg">
               <CheckCircle2 className="w-9 h-9" />
             </div>
 
             <div className="space-y-1 relative z-10">
-              <span className="text-[10px] uppercase font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="member-canje-success-badge text-[10px] uppercase font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 ¡Premio Entregado en Mesa!
               </span>
               <h2 className="text-2xl font-serif font-bold text-white pt-2">
@@ -233,7 +225,7 @@ export default function SocioCanjePage({
                 {canje.premio.titulo}
               </p>
               <p className="text-xs text-stone-400 leading-relaxed pt-1">
-                El mozo validó tu cupón y se debitaron{" "}
+                El equipo validó tu cupón y se debitaron{" "}
                 <span className="font-bold text-[#d4aa58] font-mono">
                   {canje.puntosGastados} puntos
                 </span>
@@ -242,7 +234,7 @@ export default function SocioCanjePage({
             </div>
 
             <div className="bg-[#050304] rounded-2xl p-3 border border-stone-800 text-xs text-stone-300">
-              <p className="text-[11px] text-emerald-400 font-semibold">Validación Exitosa en Salón</p>
+              <p className="member-canje-success-label text-[11px] text-emerald-400 font-semibold">Validación exitosa en salón</p>
               <p className="font-mono text-[11px] mt-0.5 text-stone-400">
                 Código: <span className="font-bold text-white">{canje.codigoQR}</span>
               </p>
@@ -272,7 +264,7 @@ export default function SocioCanjePage({
             <div className="space-y-1">
               <h2 className="text-base font-serif font-bold text-white">Cupón Expirado</h2>
               <p className="text-xs text-stone-400 leading-relaxed">
-                Transcurrieron los 15 minutos sin ser validado en mesa. Los{" "}
+                El cupón venció antes de ser validado en mesa. Los{" "}
                 <span className="font-bold text-[#d4aa58] font-mono">
                   {canje.puntosGastados} puntos
                 </span>{" "}
@@ -321,7 +313,7 @@ export default function SocioCanjePage({
             <div className="bg-gradient-to-r from-[#5c131d] via-[#7a1a27] to-[#3a0b12] text-white p-5 text-center">
               <div className="flex items-center justify-center gap-1.5 text-[#f5ede6] text-[10px] font-semibold uppercase tracking-wider mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-[#d4aa58]" />
-                <span>Presentá este código al mozo</span>
+                <span>Presentá este código al equipo</span>
               </div>
               <h2 className="text-lg font-serif font-bold leading-tight">{canje.premio.titulo}</h2>
               <p className="text-xs text-[#d4aa58] font-mono font-bold mt-0.5">
@@ -341,9 +333,12 @@ export default function SocioCanjePage({
               <div className="flex justify-center my-2">
                 {qrDataUrl ? (
                   <div className="p-3 bg-white rounded-2xl shadow-xl inline-block border-2 border-[#5c131d]/30">
-                    <img
+                    <Image
                       src={qrDataUrl}
                       alt={`QR ${canje.codigoQR}`}
+                      width={224}
+                      height={224}
+                      unoptimized
                       className="w-56 h-56 mx-auto rounded-lg"
                     />
                   </div>
@@ -363,14 +358,14 @@ export default function SocioCanjePage({
                   {canje.codigoQR}
                 </p>
                 <p className="text-[10px] text-stone-500 mt-1">
-                  El mozo puede escanear el QR o ingresar este código en su tablet
+                  El equipo puede escanear el QR o ingresar este código en su tablet
                 </p>
               </div>
 
               {/* Instrucción y Botón Cancelar */}
               <div className="pt-4 border-t border-stone-800/80 flex flex-col gap-2">
                 <p className="text-[11px] text-stone-400 italic">
-                  Esta pantalla se actualizará automáticamente cuando tu mozo valide el cupón.
+                  Esta pantalla se actualizará automáticamente cuando el equipo valide el cupón.
                 </p>
                 <button
                   type="button"

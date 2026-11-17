@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/guards";
+import { readJsonBody, validate } from "@/lib/validation";
 
 export async function GET() {
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const config = await prisma.configuracionPuntos.findFirst();
     return NextResponse.json({
@@ -30,23 +31,34 @@ export async function PUT(request: Request) {
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
-    const body = await request.json();
-    const { puntosPorEncuesta, encuestaActiva, encuestaUnaVezPorSocio } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
+
+    const campos = validate(
+      z.object({
+        puntosPorEncuesta: z.coerce.number().int().min(0).optional(),
+        encuestaActiva: z.boolean().optional(),
+        encuestaUnaVezPorSocio: z.boolean().optional(),
+      }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const { puntosPorEncuesta, encuestaActiva, encuestaUnaVezPorSocio } =
+      campos.data;
 
     const dataToUpdate: Record<string, unknown> = {};
 
     if (puntosPorEncuesta !== undefined) {
-      dataToUpdate.puntosPorEncuesta = Math.max(0, Number(puntosPorEncuesta) || 0);
+      dataToUpdate.puntosPorEncuesta = puntosPorEncuesta;
     }
 
     if (encuestaActiva !== undefined) {
-      dataToUpdate.encuestaActiva = Boolean(encuestaActiva);
+      dataToUpdate.encuestaActiva = encuestaActiva;
     }
 
     if (encuestaUnaVezPorSocio !== undefined) {
-      dataToUpdate.encuestaUnaVezPorSocio = Boolean(encuestaUnaVezPorSocio);
+      dataToUpdate.encuestaUnaVezPorSocio = encuestaUnaVezPorSocio;
     }
 
     const config = await prisma.configuracionPuntos.findFirst();
@@ -59,9 +71,9 @@ export async function PUT(request: Request) {
     } else {
       updated = await prisma.configuracionPuntos.create({
         data: {
-          puntosPorEncuesta: Number(puntosPorEncuesta) || 10,
-          encuestaActiva: encuestaActiva !== undefined ? Boolean(encuestaActiva) : true,
-          encuestaUnaVezPorSocio: encuestaUnaVezPorSocio !== undefined ? Boolean(encuestaUnaVezPorSocio) : false,
+          puntosPorEncuesta: puntosPorEncuesta ?? 10,
+          encuestaActiva: encuestaActiva ?? true,
+          encuestaUnaVezPorSocio: encuestaUnaVezPorSocio ?? false,
         },
       });
     }

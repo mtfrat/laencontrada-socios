@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { middleware } from "../middleware";
+import { proxy as middleware } from "../src/proxy";
 
 const SECRET = "test-secret-de-mas-de-32-caracteres-0123456789";
 
@@ -53,6 +53,14 @@ beforeEach(() => {
 });
 
 describe("middleware — protección gruesa de rutas", () => {
+  it("el login de socios no redirige hacia sí mismo, incluso con una cookie inválida", () => {
+    for (const cookies of [[], [{ name: "laencontrada_socio_token", value: "expired" }]]) {
+      const response = run("/socio/login", cookies);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+    }
+    expect(run("/socio/login/privado").status).toBe(307);
+  });
   it("API staff sin token responde 401", () => {
     const response = run("/api/pos/puntos") as any;
     expect(response.status).toBe(401);
@@ -70,6 +78,13 @@ describe("middleware — protección gruesa de rutas", () => {
       { name: "laencontrada_socio_token", value: socioToken() },
     ]) as any;
     expect(response.status).toBe(401);
+  });
+
+  it("reserva la página y API del chat al personal", () => {
+    expect(run("/staff/chat").status).toBe(307);
+    expect(run("/api/staff/chat").status).toBe(401);
+    expect(run("/api/staff/chat", [{ name: "laencontrada_socio_token", value: socioToken() }]).status).toBe(401);
+    expect(run("/staff/chat", [{ name: "laencontrada_staff_token", value: staffToken() }]).status).toBe(200);
   });
 
   it("API socio sin token responde 401", () => {

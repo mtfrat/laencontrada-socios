@@ -9,6 +9,8 @@ export interface FakeState {
   visitas: Row[];
   platos: Row[];
   tickets: Row[];
+  creditedTickets: Row[];
+  accessCodes: Row[];
   respuestas: Row[];
   respuestaItems: Row[];
   preguntas: Row[];
@@ -25,6 +27,8 @@ function emptyState(): FakeState {
     visitas: [],
     platos: [],
     tickets: [],
+    creditedTickets: [],
+    accessCodes: [],
     respuestas: [],
     respuestaItems: [],
     preguntas: [],
@@ -41,6 +45,8 @@ const MODEL_TABLES: Record<string, keyof FakeState> = {
   visitaConsumo: "visitas",
   itemPlatoConsumido: "platos",
   ticketAdjunto: "tickets",
+  ticketAcreditado: "creditedTickets",
+  accesoSocioCodigo: "accessCodes",
   respuestaEncuesta: "respuestas",
   itemRespuestaEncuesta: "respuestaItems",
   preguntaEncuesta: "preguntas",
@@ -51,6 +57,8 @@ const UNIQUE_FIELDS: Record<string, string[]> = {
   canjePremio: ["codigoQR"],
   respuestaEncuesta: ["visitaConsumoId"],
   ticketAdjunto: ["visitaConsumoId"],
+  ticketAcreditado: ["clave", "numeroFactura"],
+  accesoSocioCodigo: ["id"],
 };
 
 const RELATIONS: Record<
@@ -265,6 +273,14 @@ function makeModel(model: string, readState: () => FakeState) {
         createdAt: new Date(),
         ...args.data,
       };
+      if (model === "visitaConsumo" && row.ticketAdjunto?.create) {
+        readState().tickets.push({
+          id: globalThis.crypto.randomUUID(),
+          visitaConsumoId: row.id,
+          ...row.ticketAdjunto.create,
+        });
+        delete row.ticketAdjunto;
+      }
       rows().push(row);
       return project(row, args.select);
     },
@@ -334,6 +350,8 @@ function makeApi(readState: () => FakeState) {
     visitaConsumo: makeModel("visitaConsumo", readState),
     itemPlatoConsumido: makeModel("itemPlatoConsumido", readState),
     ticketAdjunto: makeModel("ticketAdjunto", readState),
+    ticketAcreditado: makeModel("ticketAcreditado", readState),
+    accesoSocioCodigo: makeModel("accesoSocioCodigo", readState),
     respuestaEncuesta: makeModel("respuestaEncuesta", readState),
     itemRespuestaEncuesta: makeModel("itemRespuestaEncuesta", readState),
     preguntaEncuesta: makeModel("preguntaEncuesta", readState),

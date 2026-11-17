@@ -1,6 +1,8 @@
 import { prisma } from "../src/lib/prisma";
+import { assertLocalReviewDatabase } from "./assert-local-review-db";
 
 async function run() {
+  assertLocalReviewDatabase();
   const socio = await prisma.socio.findUnique({ where: { dni: "12345678" } });
   if (!socio) throw new Error("Socio no encontrado");
 

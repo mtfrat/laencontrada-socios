@@ -1,37 +1,32 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/guards";
+import { dniSchema, readJsonBody, validate } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
     const auth = await requireStaffSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
-    const body = await request.json();
-    const { dni, nombre, apellido, telefono, email } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
 
-    if (!dni || typeof dni !== "string") {
-      return NextResponse.json(
-        { success: false, error: "El número de DNI es obligatorio." },
-        { status: 400 }
-      );
-    }
-
-    const cleanDni = dni.replace(/\D/g, "").trim();
-    if (cleanDni.length < 5) {
-      return NextResponse.json(
-        { success: false, error: "El DNI debe tener al menos 5 dígitos válidos." },
-        { status: 400 }
-      );
-    }
-
-    if (!nombre || typeof nombre !== "string" || !nombre.trim()) {
-      return NextResponse.json(
-        { success: false, error: "El nombre del socio es obligatorio." },
-        { status: 400 }
-      );
-    }
+    const campos = validate(
+      z.object({
+        dni: dniSchema,
+        nombre: z
+          .string({ error: "El nombre del socio es obligatorio." })
+          .trim()
+          .min(1, "El nombre del socio es obligatorio."),
+        apellido: z.string().trim().optional(),
+        telefono: z.string().trim().optional(),
+        email: z.string().trim().optional(),
+      }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const { dni: cleanDni, nombre, apellido, telefono, email } = campos.data;
 
     // Comprobar si ya existe por DNI
     const existing = await prisma.socio.findUnique({
@@ -85,9 +80,9 @@ export async function POST(request: Request) {
             numeroSocio: nextNumSocio,
             dni: cleanDni,
             nombre: nombre.trim(),
-            apellido: apellido && typeof apellido === "string" ? apellido.trim() : null,
-            telefono: telefono && typeof telefono === "string" && telefono.trim() ? telefono.trim() : null,
-            email: email && typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null,
+            apellido: apellido || null,
+            telefono: telefono || null,
+            email: email ? email.toLowerCase() : null,
             puntosActuales: 0,
             puntosHistoricos: 0,
             activo: true,

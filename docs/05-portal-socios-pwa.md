@@ -5,13 +5,11 @@ El portal de socios está optimizado para dispositivos móviles, diseñado para 
 
 ---
 
-## 2. Flujo de Autenticación Ágil (Sin Fricción)
-1. El socio ingresa al portal (`/login`).
-2. Se le solicita únicamente su **Número de DNI**.
-3. **Validación:**
-   - Si el DNI existe en la base de datos de socios, se inicia sesión inmediatamente mediante token seguro en cookie `HttpOnly`.
-   - (Opcional configurable): Posibilidad de solicitar un PIN de 4 dígitos o permitir definir una contraseña si el socio desea mayor privacidad.
-4. Si el DNI no está registrado, se le muestra la opción de solicitar alta o consultar al mozo.
+## 2. Acceso de socios
+1. El socio ingresa a `/socio/login` con su DNI en los campos usuario y contraseña.
+2. El acceso exige un socio activo, responde de manera genérica ante credenciales incorrectas y limita intentos por IP y DNI.
+3. La sesión queda en una cookie `HttpOnly`. Las credenciales del administrador y del equipo son independientes.
+4. El DNI es un dato que otras personas pueden conocer: este método tiene una protección limitada.
 
 ---
 

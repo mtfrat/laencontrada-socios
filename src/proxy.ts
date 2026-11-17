@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 const SOCIO_COOKIE = "laencontrada_socio_token";
 const STAFF_COOKIE = "laencontrada_staff_token";
 
-const STAFF_PREFIXES = ["/admin", "/pos", "/api/admin", "/api/pos"];
+const STAFF_PREFIXES = ["/admin", "/pos", "/staff/chat", "/api/admin", "/api/pos", "/api/staff/chat"];
 const SOCIO_PREFIXES = ["/socio", "/api/socio"];
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
@@ -20,7 +20,10 @@ function verifyType(token: string, secret: string, type: "STAFF" | "SOCIO"): boo
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
+  // The sign-in page must be reachable before a member has a session.
+  if (request.nextUrl.pathname === "/socio/login") return NextResponse.next();
+
   const secret = process.env.SESSION_SECRET;
   if (!secret || secret.trim().length < 32) {
     return NextResponse.json(
@@ -77,9 +80,11 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/pos/:path*",
+    "/staff/chat/:path*",
     "/socio/:path*",
     "/api/admin/:path*",
     "/api/pos/:path*",
+    "/api/staff/chat/:path*",
     "/api/socio/:path*",
   ],
 };

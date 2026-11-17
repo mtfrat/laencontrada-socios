@@ -28,6 +28,7 @@ export interface SocioSessionPayload {
   nombre: string;
   apellido?: string | null;
   numeroSocio: string;
+  sessionVersion?: number;
   type: "SOCIO";
 }
 
@@ -43,7 +44,7 @@ export interface StaffSessionPayload {
 // SESIONES DE SOCIOS
 // ==========================
 export async function createSocioSession(payload: Omit<SocioSessionPayload, "type">) {
-  const token = jwt.sign({ ...payload, type: "SOCIO" }, JWT_SECRET, {
+  const token = jwt.sign({ ...payload, sessionVersion: payload.sessionVersion ?? 0, type: "SOCIO" }, JWT_SECRET, {
     expiresIn: "7d",
   });
 
@@ -67,7 +68,7 @@ export async function getSocioSession(): Promise<SocioSessionPayload | null> {
   let decoded: SocioSessionPayload;
   try {
     decoded = jwt.verify(token, JWT_SECRET) as SocioSessionPayload;
-    if (decoded.type !== "SOCIO") return null;
+    if (decoded.type !== "SOCIO" || typeof decoded.sessionVersion !== "number") return null;
   } catch {
     return null;
   }
@@ -83,9 +84,10 @@ export async function getSocioSession(): Promise<SocioSessionPayload | null> {
       apellido: true,
       numeroSocio: true,
       activo: true,
+      sessionVersion: true,
     },
   });
-  if (!socio || !socio.activo) return null;
+  if (!socio || !socio.activo || decoded.sessionVersion !== (socio.sessionVersion ?? 0)) return null;
 
   return {
     id: socio.id,
@@ -93,6 +95,7 @@ export async function getSocioSession(): Promise<SocioSessionPayload | null> {
     nombre: socio.nombre,
     apellido: socio.apellido,
     numeroSocio: socio.numeroSocio,
+    sessionVersion: socio.sessionVersion ?? 0,
     type: "SOCIO",
   };
 }
@@ -145,9 +148,10 @@ export async function getStaffSession(): Promise<StaffSessionPayload | null> {
       username: true,
       nombre: true,
       role: true,
+      activo: true,
     },
   });
-  if (!usuario) return null;
+  if (!usuario || !usuario.activo) return null;
 
   return {
     id: usuario.id,

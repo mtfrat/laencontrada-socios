@@ -1,0 +1,30 @@
+.page{min-height:100svh;background:#f5f0e7;color:#352b2b;color-scheme:light;font-family:Arial,Helvetica,sans-serif}
+.page *{box-sizing:border-box}
+.inner{width:min(100%,620px);margin:auto;padding:0 24px}
+.top{min-height:86px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #d7c9bb}
+.wordmark{font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;line-height:.9;color:#54262d;text-decoration:none;white-space:nowrap}
+.wordmark span{display:block;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.4;text-transform:uppercase;letter-spacing:.18em;margin-top:7px}
+.share{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;background:#fffaf3;border:1px solid #d7c9bb;color:#54262d;font-size:12px;cursor:pointer}
+.photo{position:relative;height:240px;margin-top:26px;overflow:hidden;background:#e9dfd1}
+.photo img{object-fit:cover;object-position:center 58%}
+.intro{padding:34px 0 26px}
+.eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:#713843}
+.intro h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(49px,9vw,72px);font-weight:400;line-height:.98;letter-spacing:-.035em;margin:10px 0 17px;color:#54262d}
+.intro>p:last-child{font-size:15px;line-height:1.65;max-width:510px;color:#725f55}
+.links{border-top:1px solid #d7c9bb}
+.link,.primary{display:flex;align-items:center;gap:17px;width:100%;min-height:80px;padding:13px 15px;border:0;border-bottom:1px solid #d7c9bb;background:transparent;color:#54262d;text-decoration:none;text-align:left;cursor:pointer;transition:background-color .18s}
+.link:hover{background:#e9dfd1}
+.link>svg:first-child,.primary>svg:first-child{flex:none}
+.link>span,.primary>span{display:block;min-width:0;flex:1}
+.link strong,.primary strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:25px;font-weight:500;line-height:1.08}
+.link small,.primary small{display:block;font-size:12px;line-height:1.4;margin-top:5px;color:#725f55}
+.primary{background:#54262d;color:#fff9f0;min-height:86px;margin:0 0 10px}
+.primary:hover{background:#713843}
+.primary small{color:#ead9d3}
+.footer{padding:28px 0 38px;color:#725f55;font-size:12px}
+.footer>div{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.footer a{min-height:44px;display:inline-flex;align-items:center;gap:7px;color:#54262d;text-decoration:none}
+.footer p{border-top:1px solid #d7c9bb;padding-top:18px;margin-top:8px}
+.page :focus-visible{outline:2px solid #54262d;outline-offset:4px}
+@media(max-width:480px){.inner{padding:0 18px}.top{min-height:76px}.wordmark{font-size:26px}.wordmark span{font-size:8px}.photo{height:205px;margin-top:18px}.intro{padding:29px 0 22px}.intro h1{font-size:55px}.link,.primary{min-height:76px;padding-left:10px;padding-right:10px;gap:12px}.link strong,.primary strong{font-size:23px}}
+@media(prefers-reduced-motion:reduce){.link,.primary{transition:none}}

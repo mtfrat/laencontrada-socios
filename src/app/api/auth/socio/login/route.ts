@@ -1,132 +1,37 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createSocioSession } from "@/lib/auth";
-import {
-  getClientIp,
-  socioLoginDniLimiter,
-  socioLoginIpLimiter,
-} from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/rate-limit";
+import { hitPersistentRateLimit } from "@/lib/persistent-rate-limit";
+import { dniSchema, readJsonBody, validate } from "@/lib/validation";
 
-const RATE_LIMIT_ERROR =
-  "Demasiados intentos de ingreso. Esperá unos minutos y volvé a intentar.";
-const INTERNAL_ERROR =
-  "No pudimos iniciar tu sesión en este momento. Intenta nuevamente.";
-
-function rateLimitedResponse(retryAfterSeconds: number) {
-  return NextResponse.json(
-    { success: false, code: "RATE_LIMITED", error: RATE_LIMIT_ERROR },
-    { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
-  );
-}
+const credentialsSchema = z.object({ dni: dniSchema, password: dniSchema });
+const invalid = () => NextResponse.json({ success: false, code: "INVALID_CREDENTIALS", error: "DNI o contraseña incorrectos." }, { status: 401 });
 
 export async function POST(request: Request) {
-  const ipDecision = socioLoginIpLimiter.hit(`ip:${getClientIp(request)}`);
-  if (!ipDecision.allowed) {
-    return rateLimitedResponse(ipDecision.retryAfterSeconds);
-  }
-
   try {
-    const body = await request.json();
-    const rawDni = body?.dni;
-
-    if (!rawDni || typeof rawDni !== "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "DNI_REQUIRED",
-          error: "El número de DNI es obligatorio.",
-        },
-        { status: 400 }
-      );
+    const ip = getClientIp(request);
+    const ipLimit = await hitPersistentRateLimit("socio-login-ip", ip, 20, 15 * 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json({ success: false, code: "RATE_LIMITED", error: "Demasiados intentos. Esperá unos minutos y volvé a intentar." }, { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } });
     }
-
-    const cleanDni = rawDni.replace(/[.\-\s]/g, "").trim();
-
-    if (!/^\d{6,20}$/.test(cleanDni)) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "DNI_INVALID",
-          error: "El DNI ingresado no es válido.",
-        },
-        { status: 400 }
-      );
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const credentials = validate(credentialsSchema, parsed.data);
+    if (!credentials.ok) return credentials.response;
+    const { dni, password } = credentials.data;
+    if (dni !== password) return invalid();
+    const dniLimit = await hitPersistentRateLimit("socio-login-dni", dni, 10, 15 * 60 * 1000);
+    if (!dniLimit.allowed) {
+      return NextResponse.json({ success: false, code: "RATE_LIMITED", error: "Demasiados intentos. Esperá unos minutos y volvé a intentar." }, { status: 429, headers: { "Retry-After": String(dniLimit.retryAfterSeconds) } });
     }
-
-    const dniDecision = socioLoginDniLimiter.hit(`dni:${cleanDni}`);
-    if (!dniDecision.allowed) {
-      return rateLimitedResponse(dniDecision.retryAfterSeconds);
-    }
-
-    const socio = await prisma.socio.findUnique({
-      where: { dni: cleanDni },
-      select: {
-        id: true,
-        dni: true,
-        nombre: true,
-        apellido: true,
-        numeroSocio: true,
-        puntosActuales: true,
-        puntosHistoricos: true,
-        activo: true,
-      },
-    });
-
-    if (!socio) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "NOT_FOUND",
-          error:
-            "No encontramos ningún socio registrado con el DNI " +
-            cleanDni +
-            ". Puedes solicitar el alta con tu mozo.",
-        },
-        { status: 404 }
-      );
-    }
-
-    if (!socio.activo) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "ACCOUNT_DISABLED",
-          error:
-            "Esta cuenta de socio se encuentra pausada. Por favor consulta con la administración.",
-        },
-        { status: 403 }
-      );
-    }
-
-    await createSocioSession({
-      id: socio.id,
-      dni: socio.dni,
-      nombre: socio.nombre,
-      apellido: socio.apellido,
-      numeroSocio: socio.numeroSocio,
-    });
-
-    return NextResponse.json({
-      success: true,
-      socio: {
-        id: socio.id,
-        dni: socio.dni,
-        nombre: socio.nombre,
-        apellido: socio.apellido,
-        numeroSocio: socio.numeroSocio,
-        puntosActuales: socio.puntosActuales,
-        puntosHistoricos: socio.puntosHistoricos,
-      },
-    });
+    const socio = await prisma.socio.findUnique({ where: { dni }, select: { id: true, dni: true, nombre: true, apellido: true, numeroSocio: true, sessionVersion: true, activo: true } });
+    if (!socio?.activo) return invalid();
+    await createSocioSession({ id: socio.id, dni: socio.dni, nombre: socio.nombre, apellido: socio.apellido, numeroSocio: socio.numeroSocio, sessionVersion: socio.sessionVersion });
+    return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("Error en socio login:", {
-      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
-      message: error instanceof Error ? error.message : String(error),
-    });
-
-    return NextResponse.json(
-      { success: false, code: "INTERNAL_ERROR", error: INTERNAL_ERROR },
-      { status: 500 }
-    );
+    console.error("Error en socio login:", error instanceof Error ? error.message : String(error));
+    return NextResponse.json({ success: false, code: "INTERNAL_ERROR", error: "No pudimos iniciar tu sesión en este momento. Intentá nuevamente." }, { status: 500 });
   }
 }

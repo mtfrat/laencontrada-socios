@@ -1,20 +1,18 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { getStaffSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import StaffLogoutButton from "@/components/staff/StaffLogoutButton";
+import StaffHeader from "@/components/staff/StaffHeader";
 import AdminMetricsDashboard, { MetricsData } from "@/components/admin/AdminMetricsDashboard";
 import {
   Users,
   Gift,
   Settings,
-  Database,
   ArrowUpRight,
-  TrendingUp,
   HelpCircle,
   UtensilsCrossed,
   UserCog,
+  MessageSquare,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -24,7 +22,7 @@ export default async function AdminDashboardPage() {
     redirect("/staff/login");
   }
 
-  if (session.role !== "ADMIN") {
+  if (session.role !== "SUPER_ADMIN") {
     redirect("/pos");
   }
 
@@ -82,23 +80,18 @@ export default async function AdminDashboardPage() {
       },
     }),
     prisma.premio.findMany({
-      take: 5,
-      orderBy: {
-        canjes: {
-          _count: "desc",
-        },
-      },
       select: {
         id: true,
         titulo: true,
         puntosRequeridos: true,
         stock: true,
         _count: {
-          select: { canjes: true },
+          select: { canjes: { where: { estado: "COMPLETADO" } } },
         },
       },
     }),
     prisma.socio.findMany({
+      where: { activo: true },
       take: 5,
       orderBy: {
         puntosHistoricos: "desc",
@@ -129,9 +122,10 @@ export default async function AdminDashboardPage() {
       },
     }),
     prisma.canjePremio.findMany({
+      where: { estado: "COMPLETADO" },
       take: 3,
       orderBy: {
-        createdAt: "desc",
+        fechaCanje: "desc",
       },
       include: {
         socio: {
@@ -193,7 +187,7 @@ export default async function AdminDashboardPage() {
     puntosRequeridos: p.puntosRequeridos,
     totalCanjes: p._count.canjes,
     stock: p.stock,
-  }));
+  })).sort((a, b) => b.totalCanjes - a.totalCanjes).slice(0, 5);
 
   // Top Socios
   const topSocios = topSociosRaw.map((s) => ({
@@ -212,6 +206,7 @@ export default async function AdminDashboardPage() {
       socioNombre: `${v.socio.nombre} ${v.socio.apellido || ""}`.trim(),
       detalle: `Consumo en salón ($${Number(v.montoTotalTicket).toLocaleString("es-AR")})`,
       puntos: v.puntosAcreditados,
+      sortAt: new Date(v.fechaVisita).getTime(),
       fecha: new Date(v.fechaVisita).toLocaleDateString("es-AR", {
         day: "2-digit",
         month: "short",
@@ -223,12 +218,13 @@ export default async function AdminDashboardPage() {
       socioNombre: `${c.socio.nombre} ${c.socio.apellido || ""}`.trim(),
       detalle: `Canje: ${c.premio.titulo}`,
       puntos: c.puntosGastados,
-      fecha: new Date(c.createdAt).toLocaleDateString("es-AR", {
+      sortAt: new Date(c.fechaCanje ?? c.createdAt).getTime(),
+      fecha: new Date(c.fechaCanje ?? c.createdAt).toLocaleDateString("es-AR", {
         day: "2-digit",
         month: "short",
       }),
     })),
-  ].slice(0, 6);
+  ].sort((a, b) => b.sortAt - a.sortAt).slice(0, 6);
 
   const metricsData: MetricsData = {
     financials: {
@@ -254,144 +250,54 @@ export default async function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-[#010101] text-stone-100 pb-16">
       {/* Admin Header with Official Logo */}
-      <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="La Encontrada"
-              width={34}
-              height={34}
-              className="drop-shadow-[0_1px_6px_rgba(92,19,29,0.5)]"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white font-serif">Panel de Administración</span>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[#5c131d]/30 text-[#e18693] border border-[#5c131d]/50 font-semibold">
-                  Gerencia
-                </span>
-              </div>
-              <p className="text-xs text-stone-400">Usuario: {session.nombre}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/pos"
-              className="text-xs bg-stone-900 hover:bg-stone-800 text-[#ce7281] px-3 py-1.5 rounded-xl border border-[#5c131d]/40 transition"
-            >
-              Terminal de Salón
-            </Link>
-            <StaffLogoutButton />
-          </div>
-        </div>
-      </header>
+      <StaffHeader title="Panel del administrador" name={session.nombre} role={session.role === "SUPER_ADMIN" ? "Administrador" : "Equipo"} actions={[{ href: "/pos", label: "Terminal de salón", icon: "terminal" }]} />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 pt-6 space-y-8">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-white tracking-tight">
-            Tablero Gerencial • La Encontrada Wine Bistro
+          <p className="mb-1 text-sm font-medium text-[#d4aa58]">La Encontrada · El Bolsón</p>
+          <h1 className="text-3xl font-serif font-bold text-white tracking-tight sm:text-4xl">
+            Administración del restaurante
           </h1>
           <p className="text-stone-400 text-sm mt-1">
-            Métricas ejecutivas de ventas en salón, motor de fidelización, hábitos de consumo y acceso a módulos.
+            Gestioná socios, puntos, premios y equipo. Consultá abajo la actividad registrada.
           </p>
         </div>
 
+        <section aria-labelledby="acciones-frecuentes" className="space-y-3">
+          <h2 id="acciones-frecuentes" className="text-xl font-semibold text-white sm:text-2xl">Acciones frecuentes</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {[
+              { href: "/pos", label: "Cargar puntos", detail: "Mesa o ticket", icon: UtensilsCrossed },
+              { href: "/admin/socios", label: "Socios", detail: `${totalSocios} registrados`, icon: Users },
+              { href: "/admin/premios", label: "Premios", detail: `${totalPremios} activos`, icon: Gift },
+              { href: "/admin/usuarios", label: "Equipo", detail: `${totalStaff} cuentas activas`, icon: UserCog },
+              { href: "/staff/chat", label: "Chat interno", detail: "Hablar con el equipo", icon: MessageSquare },
+            ].map(({ href, label, detail, icon: Icon }) => (
+              <Link key={href} href={href} className="staff-task-card group flex min-h-28 flex-col justify-between rounded-2xl border border-[#6c3437]/60 bg-[#1b1012] p-4 transition hover:border-[#d4aa58]/70 hover:bg-[#261417]">
+                <div className="flex items-start justify-between text-[#d4aa58]"><Icon size={20} aria-hidden="true" /><ArrowUpRight size={16} className="text-stone-500 transition group-hover:text-[#d4aa58]" aria-hidden="true" /></div>
+                <div><h3 className="text-sm font-semibold text-white">{label}</h3><p className="text-xs text-stone-400">{detail}</p></div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* COMPONENTE INTERACTIVO DE MÉTRICAS Y KPIS */}
-        <AdminMetricsDashboard data={metricsData} />
+        <section aria-labelledby="resumen-restaurante" className="space-y-4">
+          <div><h2 id="resumen-restaurante" className="text-xl font-semibold text-white sm:text-2xl">Resumen del restaurante</h2><p className="text-sm text-stone-400">Consumos, puntos y premios registrados.</p></div>
+          <AdminMetricsDashboard data={metricsData} />
+        </section>
 
         {/* Sección de Módulos Operativos */}
-        <div className="space-y-4 pt-4 border-t border-[#5c131d]/20">
+        <section aria-labelledby="mas-herramientas" className="space-y-4 pt-4 border-t border-[#5c131d]/20">
           <div>
-            <h2 className="text-base font-bold text-white font-serif uppercase tracking-wider">
-              Módulos de Gestión del Restaurante
+            <h2 id="mas-herramientas" className="text-xl font-semibold text-white sm:text-2xl">
+              Más herramientas
             </h2>
-            <p className="text-xs text-stone-400">Acceso rápido a las herramientas de control y configuración.</p>
+            <p className="text-sm text-stone-400">Historial de visitas, reglas de puntos y encuestas.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Module: Socios & Importación */}
-            <Link
-              href="/admin/socios"
-              className="bg-[#0d0708] rounded-2xl p-5 border border-stone-800 hover:border-[#5c131d]/60 shadow-lg transition flex flex-col justify-between group"
-            >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
-                  <Database className="w-5 h-5" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white group-hover:text-[#e18693] transition">
-                    Base de Socios
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#5c131d]/30 text-[#d4aa58] border border-[#5c131d]/50 font-bold">
-                    {totalSocios} socios
-                  </span>
-                </div>
-                <p className="text-stone-400 text-xs mt-1">
-                  Padrón completo, exportación a Excel en CSV y ajuste manual de puntos con auditoría.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-stone-800/80 flex items-center justify-between text-xs text-[#ce7281]">
-                <span>Gestionar Padrón</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </div>
-            </Link>
-
-            {/* Module: Catálogo de Premios */}
-            <Link
-              href="/admin/premios"
-              className="bg-[#0d0708] rounded-2xl p-5 border border-stone-800 hover:border-[#5c131d]/60 shadow-lg transition flex flex-col justify-between group"
-            >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
-                  <Gift className="w-5 h-5" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white group-hover:text-[#e18693] transition">
-                    Catálogo de Premios
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#5c131d]/30 text-[#d4aa58] border border-[#5c131d]/50 font-bold">
-                    {totalPremios} activos
-                  </span>
-                </div>
-                <p className="text-stone-400 text-xs mt-1">
-                  Administración de recompensas gastronómicas, costos en puntos y control de stock.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-stone-800/80 flex items-center justify-between text-xs text-[#ce7281]">
-                <span>Ver Catálogo</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </div>
-            </Link>
-
-            {/* Module: Personal & Mozos */}
-            <Link
-              href="/admin/usuarios"
-              className="bg-[#0d0708] rounded-2xl p-5 border border-stone-800 hover:border-[#5c131d]/60 shadow-lg transition flex flex-col justify-between group"
-            >
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-[#5c131d]/20 text-[#ce7281] border border-[#5c131d]/30 flex items-center justify-center mb-3 group-hover:scale-105 transition">
-                  <UserCog className="w-5 h-5" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white group-hover:text-[#e18693] transition">
-                    Equipo & Mozos
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#5c131d]/30 text-[#d4aa58] border border-[#5c131d]/50 font-bold">
-                    {totalStaff} activos
-                  </span>
-                </div>
-                <p className="text-stone-400 text-xs mt-1">
-                  Altas de mozos y cajeros, cambio de contraseñas y permisos para la terminal.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-stone-800/80 flex items-center justify-between text-xs text-[#ce7281]">
-                <span>Administrar Personal</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </div>
-            </Link>
-
             {/* Module: Historial Gastronómico & Platos */}
             <Link
               href="/admin/visitas"
@@ -458,7 +364,7 @@ export default async function AdminDashboardPage() {
               </div>
             </Link>
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );

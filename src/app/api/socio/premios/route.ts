@@ -59,6 +59,7 @@ export async function GET() {
     const premios = await prisma.premio.findMany({
       where: { activo: true },
       orderBy: { puntosRequeridos: "asc" },
+      select: { id: true, titulo: true, descripcion: true, puntosRequeridos: true, imagenUrl: true, stock: true },
     });
 
     const premiosFormateados = premios.map((p) => {

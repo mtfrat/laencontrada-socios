@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/guards";
+import { readJsonBody, validate } from "@/lib/validation";
 
 export async function PUT(
   request: Request,
@@ -9,55 +11,65 @@ export async function PUT(
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { id } = await params;
-    const body = await request.json();
-    const { titulo, descripcion, puntosRequeridos, stock, imagenUrl, activo } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
+
+    const campos = validate(
+      z
+        .object({
+          titulo: z
+            .string({ error: "El título no puede estar vacío." })
+            .trim()
+            .min(1, "El título no puede estar vacío.")
+            .optional(),
+          descripcion: z.string().optional(),
+          puntosRequeridos: z.coerce
+            .number({ error: "Los puntos deben ser un número mayor a 0." })
+            .int("Los puntos deben ser un número mayor a 0.")
+            .positive("Los puntos deben ser un número mayor a 0.")
+            .optional(),
+          stock: z.coerce.number().int().nullish(),
+          imagenUrl: z.string().nullish(),
+          activo: z.boolean().optional(),
+        }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const { titulo, descripcion, puntosRequeridos, stock, imagenUrl, activo } =
+      campos.data;
 
     const dataToUpdate: Record<string, unknown> = {};
 
     if (titulo !== undefined) {
-      if (!titulo || typeof titulo !== "string" || !titulo.trim()) {
-        return NextResponse.json(
-          { success: false, error: "El título no puede estar vacío." },
-          { status: 400 }
-        );
-      }
-      dataToUpdate.titulo = titulo.trim();
+      dataToUpdate.titulo = titulo;
     }
 
     if (descripcion !== undefined) {
-      dataToUpdate.descripcion = String(descripcion).trim();
+      dataToUpdate.descripcion = descripcion.trim();
     }
 
     if (puntosRequeridos !== undefined) {
-      const parsed = parseInt(puntosRequeridos, 10);
-      if (isNaN(parsed) || parsed <= 0) {
-        return NextResponse.json(
-          { success: false, error: "Los puntos deben ser un número mayor a 0." },
-          { status: 400 }
-        );
-      }
-      dataToUpdate.puntosRequeridos = parsed;
+      dataToUpdate.puntosRequeridos = puntosRequeridos;
     }
 
     if (stock !== undefined) {
-      const parsedStock = parseInt(stock, 10);
-      dataToUpdate.stock = isNaN(parsedStock) ? -1 : parsedStock;
+      dataToUpdate.stock = stock ?? -1;
     }
 
     if (imagenUrl !== undefined) {
-      dataToUpdate.imagenUrl = imagenUrl && String(imagenUrl).trim() ? String(imagenUrl).trim() : null;
+      dataToUpdate.imagenUrl = imagenUrl && imagenUrl.trim() ? imagenUrl.trim() : null;
     }
 
     if (activo !== undefined) {
-      dataToUpdate.activo = Boolean(activo);
+      dataToUpdate.activo = activo;
     }
 
     const premioActualizado = await prisma.premio.update({
       where: { id },
       data: dataToUpdate,
+      select: { id: true, titulo: true, imagenUrl: true },
     });
 
     return NextResponse.json({
@@ -81,7 +93,6 @@ export async function DELETE(
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { id } = await params;
 

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireSocioSession } from "@/lib/guards";
 import { TipoTransaccion } from "@prisma/client";
 import { ApiError, errorResponse } from "@/lib/api-error";
+import { readJsonBody, validate } from "@/lib/validation";
 
 export async function GET(
   _request: Request,
@@ -101,15 +103,28 @@ export async function POST(
     const session = auth.session;
 
     const { visitaId } = await params;
-    const body = await request.json();
-    const { respuestas, comentarios } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
 
-    if (!Array.isArray(respuestas) || respuestas.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Debes calificar al menos una pregunta." },
-        { status: 400 }
-      );
-    }
+    const campos = validate(
+      z.object({
+        respuestas: z
+          .array(
+            z.object({
+              preguntaId: z.string().min(1, "Cada respuesta requiere una pregunta."),
+              puntuacion: z.coerce
+                .number({ error: "Las puntuaciones deben ser números." })
+                .int("Las puntuaciones deben ser números enteros."),
+              comentario: z.string().optional(),
+            })
+          )
+          .min(1, "Debes calificar al menos una pregunta."),
+        comentarios: z.string().nullish(),
+      }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const { respuestas, comentarios } = campos.data;
 
     const config = await prisma.configuracionPuntos.findFirst();
 

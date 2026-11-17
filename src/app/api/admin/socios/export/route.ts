@@ -6,7 +6,6 @@ export async function GET() {
   try {
     const auth = await requireAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const socios = await prisma.socio.findMany({
       orderBy: { numeroSocio: "asc" },
@@ -24,7 +23,7 @@ export async function GET() {
         _count: {
           select: {
             visitas: true,
-            canjes: true,
+            canjes: { where: { estado: "COMPLETADO" } },
           },
         },
       },

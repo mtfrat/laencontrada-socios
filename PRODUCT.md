@@ -18,7 +18,7 @@ Sistema integral de membresía, fidelización y seguimiento gastronómico de **L
 Un programa de membresía gastronómica exclusivo para un Wine Bistro: sin contraseñas engorrosas para el cliente (login directo por DNI), distribución equitativa de puntos por comensal en mesa, canjes QR transparentes y control gerencial riguroso.
 
 ## Operating Context
-- **Salón en servicio nocturno**: Ambiente con iluminación tenue de vinoteca / bistró; la interfaz debe ofrecer un contraste impecable, negros puros y tonos vino que no encandilen pero sean 100% legibles a distancia de brazo.
+- **Salón en servicio nocturno**: Ambiente con iluminación tenue de vinoteca / bistró; las pantallas operativas actuales usan marfil y tonos vino de alto contraste para ser legibles a distancia de brazo. El negro conserva su papel en la identidad y en las referencias visuales nocturnas.
 - **Móvil del socio**: Comensales que consultan su tarjeta virtual en la mesa, ven su saldo de puntos, exploran la carta de premios y presentan su QR al mozo.
 - **Terminal de mesa (/pos)**: Pantalla táctil de mozo con botones amplios, confirmaciones inequívocas y flujo de alta rápida en menos de 10 segundos.
 
@@ -32,8 +32,8 @@ Un programa de membresía gastronómica exclusivo para un Wine Bistro: sin contr
 - **Nombre**: La Encontrada - WINE BISTRO -
 - **Paleta oficial**:
   - Color primario: `#5c131d` (Vino profundo / Borgoña / Tinto Reserva)
-  - Fondo y superficies: `#010101` (Negro absoluto bistró)
-  - Acentos y contrastes: Blanco `#ffffff`, Marfil champaña `#f5ede6`, tonos vino aterciopelados y detalles dorados sutiles para los puntos.
+  - Negro de identidad: `#010101` (Negro absoluto bistró); el club de socios y las pantallas operativas actuales usan un canvas marfil `#f5f0e7` y paneles vino `#54262d`.
+  - Acentos y contrastes: Blanco `#ffffff`, Marfil champaña `#f5ede6`, tonos vino aterciopelados y detalles champaña sutiles para los puntos.
 - **Logotipo oficial**: Isotipo de copa de vino fusionada con gorro de chef y remolino vinícola (`public/logo.png`).
 
 ## Product Principles

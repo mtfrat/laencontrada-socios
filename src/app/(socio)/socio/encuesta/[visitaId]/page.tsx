@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -22,13 +22,13 @@ interface PreguntaItem {
 
 export default function SocioEncuestaPage() {
   const params = useParams();
-  const router = useRouter();
   const visitaId = params.visitaId as string;
 
   const [loading, setLoading] = useState(true);
   const [preguntas, setPreguntas] = useState<PreguntaItem[]>([]);
   const [puntosRecompensa, setPuntosRecompensa] = useState(10);
   const [yaRespondida, setYaRespondida] = useState(false);
+  const [mensajeFrecuencia, setMensajeFrecuencia] = useState<string | null>(null);
 
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comentarios, setComentarios] = useState("");
@@ -51,6 +51,7 @@ export default function SocioEncuestaPage() {
 
         if (data.yaRespondida) {
           setYaRespondida(true);
+          setMensajeFrecuencia(data.mensajeFrecuencia ?? null);
           setLoading(false);
           return;
         }
@@ -58,11 +59,7 @@ export default function SocioEncuestaPage() {
         setPreguntas(data.preguntas);
         setPuntosRecompensa(data.puntosPorEncuesta);
 
-        const initRatings: Record<string, number> = {};
-        data.preguntas.forEach((p: PreguntaItem) => {
-          initRatings[p.id] = 5;
-        });
-        setRatings(initRatings);
+        setRatings({});
       } catch {
         setError("Error de conexión al cargar la encuesta.");
       } finally {
@@ -79,8 +76,12 @@ export default function SocioEncuestaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
+    if (preguntas.some((pregunta) => !ratings[pregunta.id])) {
+      setError("Calificá todas las preguntas antes de enviar tu opinión.");
+      return;
+    }
+    setSubmitting(true);
 
     const payload = {
       respuestas: Object.entries(ratings).map(([preguntaId, puntuacion]) => ({
@@ -114,7 +115,7 @@ export default function SocioEncuestaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#010101] flex flex-col items-center justify-center p-6 text-stone-400">
+      <div className="member-legacy member-flow min-h-screen bg-[#010101] flex flex-col items-center justify-center p-6 text-stone-400">
         <Loader2 className="w-8 h-8 animate-spin text-[#ce7281] mb-3" />
         <p className="text-sm">Cargando encuesta...</p>
       </div>
@@ -123,7 +124,7 @@ export default function SocioEncuestaPage() {
 
   if (completed) {
     return (
-      <div className="min-h-screen bg-[#010101] flex flex-col justify-between p-6 max-w-md mx-auto text-stone-100">
+      <div className="member-legacy member-flow min-h-screen bg-[#010101] flex flex-col justify-between p-6 max-w-md mx-auto text-stone-100">
         <div className="my-auto text-center bg-[#0d0708] p-8 rounded-3xl border border-emerald-500/40 shadow-2xl space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
             <CheckCircle2 className="w-8 h-8" />
@@ -161,12 +162,12 @@ export default function SocioEncuestaPage() {
 
   if (yaRespondida) {
     return (
-      <div className="min-h-screen bg-[#010101] flex flex-col justify-between p-6 max-w-md mx-auto text-stone-100">
+      <div className="member-legacy member-flow min-h-screen bg-[#010101] flex flex-col justify-between p-6 max-w-md mx-auto text-stone-100">
         <div className="my-auto text-center bg-[#0d0708] p-8 rounded-3xl border border-stone-800 shadow-xl space-y-3">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-          <h2 className="text-xl font-bold text-white">Esta visita ya fue evaluada</h2>
+          <h2 className="text-xl font-bold text-white">{mensajeFrecuencia ? "Ya participaste en la encuesta" : "Esta visita ya fue evaluada"}</h2>
           <p className="text-stone-400 text-xs">
-            Ya recibiste tus puntos de bonificación por esta visita. ¡Gracias por participar!
+            {mensajeFrecuencia ?? "Ya recibiste tus puntos de bonificación por esta visita. ¡Gracias por participar!"}
           </p>
           <div className="pt-3">
             <Link
@@ -181,8 +182,21 @@ export default function SocioEncuestaPage() {
     );
   }
 
+  if (preguntas.length === 0) {
+    return (
+      <div className="member-legacy member-flow min-h-screen bg-[#010101] flex items-center justify-center p-6 text-stone-100">
+        <div className="max-w-md w-full rounded-3xl border border-stone-800 bg-[#0d0708] p-8 text-center space-y-4">
+          <MessageSquare className="w-10 h-10 text-[#ce7281] mx-auto" />
+          <h1 className="text-xl font-serif font-bold">La encuesta no está disponible</h1>
+          <p role={error ? "alert" : undefined} className="text-sm text-stone-300">{error ?? "Todavía no hay preguntas para responder. Volvé a consultar más adelante."}</p>
+          <Link href="/socio/historial" className="inline-block rounded-xl bg-[#5c131d] px-5 py-3 text-sm font-semibold text-white">Volver a mis visitas</Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#010101] text-stone-100 pb-12">
+    <div className="member-legacy member-flow min-h-screen bg-[#010101] text-stone-100 pb-12">
       <header className="bg-[#0d0708]/90 backdrop-blur-md border-b border-[#5c131d]/40 sticky top-0 z-20">
         <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between">
           <Link
@@ -208,21 +222,21 @@ export default function SocioEncuestaPage() {
       </header>
 
       <main className="max-w-md mx-auto px-4 pt-5 space-y-5">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5c131d] via-[#3a0b12] to-[#0d0406] text-white p-5 shadow-2xl border border-[#5c131d]/50 flex items-center justify-between">
+        <div className="member-survey-hero relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5c131d] via-[#3a0b12] to-[#0d0406] text-white p-5 shadow-2xl border border-[#5c131d]/50 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-1.5 text-[#ce7281] text-xs font-semibold uppercase tracking-wider mb-1">
+            <div className="member-survey-eyebrow flex items-center gap-1.5 text-[#ce7281] text-xs font-semibold uppercase tracking-wider mb-1">
               <Sparkles className="w-3.5 h-3.5 text-[#d4aa58]" />
               <span>Encuesta de Satisfacción</span>
             </div>
             <h1 className="text-xl font-serif font-bold text-white">¿Cómo estuvo tu experiencia?</h1>
             <p className="text-xs text-stone-300 mt-0.5">
-              Respondé en 1 minuto y sumá <span className="font-bold font-mono text-[#d4aa58]">+{puntosRecompensa} pts</span> de regalo.
+              Respondé en 1 minuto y sumá <span className="member-survey-reward font-bold font-mono text-[#d4aa58]">+{puntosRecompensa} pts</span> de regalo.
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="p-3.5 bg-red-950/60 border border-red-800 text-red-200 text-xs rounded-2xl flex items-start gap-2.5">
+          <div role="alert" className="p-3.5 bg-red-950/60 border border-red-800 text-red-200 text-xs rounded-2xl flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -245,14 +259,16 @@ export default function SocioEncuestaPage() {
 
               <div className="flex items-center justify-center gap-3 pt-2">
                 {[1, 2, 3, 4, 5].map((star) => {
-                  const currentRating = ratings[p.id] || 5;
+                  const currentRating = ratings[p.id] || 0;
                   const isSelected = star <= currentRating;
                   return (
                     <button
                       key={star}
                       type="button"
                       onClick={() => handleRatingChange(p.id, star)}
-                      className="p-1 rounded-xl focus:outline-none transition transform active:scale-95"
+                      aria-label={`${star} ${star === 1 ? "estrella" : "estrellas"} para ${p.texto}`}
+                      aria-pressed={currentRating === star}
+                      className="w-11 h-11 inline-flex items-center justify-center rounded-xl focus:outline-none transition active:scale-95"
                     >
                       <Star
                         className={`w-8 h-8 transition ${
@@ -267,18 +283,19 @@ export default function SocioEncuestaPage() {
               </div>
 
               <div className="flex justify-between text-[10px] text-stone-500 px-2 font-medium">
-                <span>Regular</span>
+                <span>Podría mejorar</span>
                 <span>Excelente</span>
               </div>
             </div>
           ))}
 
           <div className="bg-[#0d0708] rounded-2xl p-4 border border-stone-800 shadow-lg space-y-2">
-            <label className="text-xs font-semibold text-stone-300 flex items-center gap-1.5">
+            <label htmlFor="comentarios" className="text-xs font-semibold text-stone-300 flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5 text-[#ce7281]" />
               Sugerencias o comentarios (Opcional):
             </label>
             <textarea
+              id="comentarios"
               rows={3}
               placeholder="Contanos qué fue lo que más te gustó o qué podemos mejorar..."
               value={comentarios}

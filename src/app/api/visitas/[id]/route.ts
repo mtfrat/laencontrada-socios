@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/guards";
 import { FranjaHoraria } from "@prisma/client";
+import { readJsonBody, validate } from "@/lib/validation";
 
 const visitaDetailInclude = {
   socio: {
@@ -31,7 +33,6 @@ export async function GET(
   try {
     const auth = await requireStaffSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { id } = await params;
 
@@ -61,11 +62,39 @@ export async function PUT(
   try {
     const auth = await requireStaffSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const { id } = await params;
-    const body = await request.json();
-    const { franjaHoraria, fechaVisita, notas, platos, numeroTicketFiscal, urlArchivo } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
+
+    const campos = validate(
+      z.object({
+        franjaHoraria: z.string().optional(),
+        fechaVisita: z.string().optional(),
+        notas: z.string().nullish(),
+        platos: z
+          .array(
+            z.object({
+              nombrePlato: z.string().optional(),
+              cantidad: z.unknown().optional(),
+              notas: z.string().optional(),
+            })
+          )
+          .optional(),
+        numeroTicketFiscal: z.string().nullish(),
+        urlArchivo: z.string().nullish(),
+      }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const {
+      franjaHoraria,
+      fechaVisita,
+      notas,
+      platos,
+      numeroTicketFiscal,
+      urlArchivo,
+    } = campos.data;
 
     const visitaExistente = await prisma.visitaConsumo.findUnique({ where: { id } });
     if (!visitaExistente) {
@@ -78,11 +107,11 @@ export async function PUT(
       const updated = await tx.visitaConsumo.update({
         where: { id },
         data: {
-          franjaHoraria: franjaHoraria && Object.values(FranjaHoraria).includes(franjaHoraria)
+          franjaHoraria: franjaHoraria && Object.values(FranjaHoraria).includes(franjaHoraria as FranjaHoraria)
             ? (franjaHoraria as FranjaHoraria)
             : undefined,
           fechaVisita: fechaVisita ? new Date(fechaVisita) : undefined,
-          notas: notas !== undefined ? (notas ? String(notas).trim() : null) : undefined,
+          notas: notas !== undefined ? (notas ? notas.trim() : null) : undefined,
         },
       });
 
@@ -95,10 +124,10 @@ export async function PUT(
         if (platos.length > 0) {
           await tx.itemPlatoConsumido.createMany({
             data: platos
-              .filter((p: { nombrePlato?: string }) => p.nombrePlato && p.nombrePlato.trim().length > 0)
-              .map((p: { nombrePlato: string; cantidad?: number; notas?: string }) => ({
+              .filter((p) => p.nombrePlato && p.nombrePlato.trim().length > 0)
+              .map((p) => ({
                 visitaConsumoId: id,
-                nombrePlato: p.nombrePlato.trim(),
+                nombrePlato: (p.nombrePlato as string).trim(),
                 cantidad: Math.max(1, Number(p.cantidad) || 1),
                 notas: p.notas ? p.notas.trim() : null,
               })),

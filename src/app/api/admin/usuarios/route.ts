@@ -1,20 +1,28 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdminSession } from "@/lib/guards";
-import { RolUsuario } from "@prisma/client";
+import { requireSuperAdminSession } from "@/lib/guards";
+import {
+  nombreSchema,
+  passwordSchema,
+  readJsonBody,
+  staffEmailSchema,
+  usernameSchema,
+  validate,
+} from "@/lib/validation";
 
 export async function GET() {
   try {
-    const auth = await requireAdminSession();
+    const auth = await requireSuperAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
     const usuarios = await prisma.usuario.findMany({
       orderBy: [{ activo: "desc" }, { createdAt: "asc" }],
       select: {
         id: true,
         username: true,
+        email: true,
         nombre: true,
         role: true,
         activo: true,
@@ -44,57 +52,33 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireAdminSession();
+    const auth = await requireSuperAdminSession();
     if (!auth.ok) return auth.response;
-    const session = auth.session;
 
-    const body = await request.json();
-    const { username, nombre, role, password } = body;
+    const bodyParsed = await readJsonBody(request);
+    if (!bodyParsed.ok) return bodyParsed.response;
 
-    // Validación de username
-    if (!username || typeof username !== "string") {
-      return NextResponse.json(
-        { success: false, error: "El nombre de usuario es obligatorio." },
-        { status: 400 }
-      );
-    }
+    const campos = validate(
+      z.object({
+        username: usernameSchema.optional(),
+        email: staffEmailSchema,
+        nombre: nombreSchema(
+          2,
+          "El nombre completo debe tener al menos 2 caracteres."
+        ),
+        role: z.literal("EQUIPO").optional(),
+        password: passwordSchema(
+          12,
+          "La contraseña inicial debe tener al menos 12 caracteres."
+        ),
+      }),
+      bodyParsed.data
+    );
+    if (!campos.ok) return campos.response;
+    const { username, email, nombre, password } = campos.data;
 
-    const cleanUsername = username.trim().toLowerCase();
-    const usernameRegex = /^[a-z0-9_]{3,20}$/;
-    if (!usernameRegex.test(cleanUsername)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "El usuario debe tener entre 3 y 20 caracteres y solo contener letras, números o guiones bajos (sin espacios).",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validación de nombre
-    if (!nombre || typeof nombre !== "string" || nombre.trim().length < 2) {
-      return NextResponse.json(
-        { success: false, error: "El nombre completo debe tener al menos 2 caracteres." },
-        { status: 400 }
-      );
-    }
-
-    // Validación de rol
-    const validRoles: RolUsuario[] = ["ADMIN", "MOZO", "CAJERO"];
-    if (!role || !validRoles.includes(role as RolUsuario)) {
-      return NextResponse.json(
-        { success: false, error: "El rol seleccionado no es válido (ADMIN, MOZO o CAJERO)." },
-        { status: 400 }
-      );
-    }
-
-    // Validación de contraseña
-    if (!password || typeof password !== "string" || password.length < 4) {
-      return NextResponse.json(
-        { success: false, error: "La contraseña inicial debe tener al menos 4 caracteres." },
-        { status: 400 }
-      );
-    }
+    const baseUsername = email.split("@")[0].replace(/[^a-z0-9_]/g, "").slice(0, 13);
+    const cleanUsername = username || `${baseUsername.length >= 3 ? baseUsername : "staff"}_${crypto.randomUUID().slice(0, 6)}`;
 
     // Verificar si el username ya existe
     const existing = await prisma.usuario.findUnique({
@@ -108,20 +92,27 @@ export async function POST(request: Request) {
       );
     }
 
+    const existingEmail = await prisma.usuario.findUnique({ where: { email } });
+    if (existingEmail) {
+      return NextResponse.json({ success: false, error: "Ese email ya está registrado." }, { status: 400 });
+    }
+
     // Hash de contraseña
     const passwordHash = await bcrypt.hash(password, 10);
 
     const nuevoUsuario = await prisma.usuario.create({
       data: {
         username: cleanUsername,
+        email,
         nombre: nombre.trim(),
-        role: role as RolUsuario,
+        role: "EQUIPO",
         passwordHash,
         activo: true,
       },
       select: {
         id: true,
         username: true,
+        email: true,
         nombre: true,
         role: true,
         activo: true,

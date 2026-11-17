@@ -1,0 +1,82 @@
+/* Shared Marfil editorial treatment for the administrator and team screens. */
+.marfil-staff {
+  --marfil-paper: #f5f0e7;
+  --marfil-surface: #fffaf3;
+  --marfil-soft: #e9dfd1;
+  --marfil-ink: #352b2b;
+  --marfil-muted: #725f55;
+  --marfil-wine: #54262d;
+  --marfil-line: #d7c9bb;
+  min-height: 100svh;
+  background: var(--marfil-paper);
+  color: var(--marfil-ink);
+  color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.marfil-staff :is([class~="bg-[#010101]"], [class~="bg-[#050304]"], [class~="bg-[#0d0708]"], [class~="bg-[#090607]"], [class~="bg-[#150c0e]"], [class~="bg-[#1b1012]"], [class~="bg-stone-900"], [class~="bg-stone-800"]) {
+  background-color: var(--marfil-surface) !important;
+}
+.marfil-staff [class~="bg-[#010101]"] { background-color: var(--marfil-paper) !important; }
+.marfil-staff :is([class~="bg-[#150c0e]"], [class~="bg-[#070405]"], [class~="bg-stone-800"]) { background-color: var(--marfil-soft) !important; }
+.marfil-staff :is([class~="bg-gradient-to-r"], [class~="bg-gradient-to-br"]) {
+  background-image: linear-gradient(120deg, #e9dfd1, #f5f0e7) !important;
+}
+.marfil-staff :is([class~="text-white"], [class~="text-stone-100"], [class~="text-stone-200"], [class~="text-stone-300"], [class~="text-[#f5ede6]"], [class~="text-champagne-warm"]) {
+  color: var(--marfil-ink) !important;
+}
+.marfil-staff :is([class~="text-stone-400"], [class~="text-stone-500"], [class~="text-stone-600"], [class~="text-[#f5ede6]/30"], [class~="text-[#f5ede6]/40"], [class~="text-[#f5ede6]/50"], [class~="text-[#f5ede6]/60"], [class~="text-[#f5ede6]/70"], [class~="text-[#f5ede6]/80"], [class~="text-champagne-muted"]) {
+  color: var(--marfil-muted) !important;
+}
+.marfil-staff [class~="text-[#f5ede6]/90"] { color: var(--marfil-ink) !important; }
+.marfil-staff :is([class~="text-[#ce7281]"], [class~="text-[#d4aa58]"], [class~="text-[#e18693]"], [class~="text-[#e4a3ad]"]) {
+  color: var(--marfil-wine) !important;
+}
+.marfil-staff :is([class~="border-stone-800"], [class~="border-stone-700"], [class~="border-[#5c131d]/20"], [class~="border-[#5c131d]/30"], [class~="border-[#5c131d]/40"], [class~="border-[#5c131d]/50"], [class~="border-[#6c3437]/60"]) {
+  border-color: var(--marfil-line) !important;
+}
+.marfil-staff :is([class~="shadow-lg"], [class~="shadow-xl"], [class~="shadow-2xl"]) { box-shadow: none !important; }
+.marfil-staff :is([class~="rounded-3xl"], [class~="rounded-2xl"]) { border-radius: 8px !important; }
+.marfil-staff [class~="rounded-xl"] { border-radius: 5px !important; }
+
+.marfil-staff :is(h1, h2) {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 400 !important;
+  letter-spacing: -.035em;
+}
+.marfil-staff h1 { font-size: clamp(2.2rem, 3.2vw, 3.7rem) !important; line-height: 1.04; }
+.marfil-staff h2 { line-height: 1.1; }
+.marfil-staff .staff-task-card h3 { font-family: Arial, Helvetica, sans-serif; font-size: 1rem; }
+.marfil-staff :is(button, input, select, textarea) { min-height: 44px; }
+.marfil-staff :is(input, textarea, select) {
+  background-color: var(--marfil-surface) !important;
+  color: var(--marfil-ink) !important;
+  border-color: #b8a99c !important;
+}
+.marfil-staff :is(input, textarea)::placeholder { color: #65564d !important; }
+.marfil-staff :is([class~="bg-[#5c131d]"], [class~="bg-[#7a1a27]"]) {
+  background-color: var(--marfil-wine) !important;
+  color: #fff9f0 !important;
+}
+.marfil-staff :is([class~="bg-[#5c131d]"], [class~="bg-[#7a1a27]"]) :is([class~="text-white"], [class~="text-stone-100"]) {
+  color: #fff9f0 !important;
+}
+.marfil-staff :is(button, a)[class~="bg-[#5c131d]"]:hover { background-color: #713843 !important; }
+.marfil-staff :is([class~="text-red-200"], [class~="text-red-300"], [class~="text-red-400"]) { color: #8b2d32 !important; }
+.marfil-staff [class~="text-emerald-400"] { color: #28704e !important; }
+.marfil-staff :is([class~="text-emerald-200"], [class~="text-emerald-300"]) { color: #28704e !important; }
+.marfil-staff :is([class~="bg-red-950/60"], [class~="bg-red-950/50"], [class~="bg-[#3a0b12]/60"], [class~="bg-[#3a0b12]/70"]) { background-color: #f9e8e4 !important; }
+.marfil-staff :is([class~="bg-emerald-950/60"], [class~="bg-emerald-950/40"]) { background-color: #e5f2e8 !important; }
+.marfil-staff [class~="bg-emerald-600"] { color: #fff9f0 !important; }
+.marfil-staff [class~="bg-emerald-600"] [class~="text-white"] { color: #fff9f0 !important; }
+.marfil-staff tr[class~="hover:bg-[#150c0e]/50"]:hover,
+.marfil-staff a[class~="hover:bg-[#261417]"]:hover,
+.marfil-staff button[class~="hover:bg-[#150c0e]"]:hover,
+.marfil-staff button[class~="hover:bg-[#1f1013]"]:hover {
+  background-color: #f0e5d8 !important;
+  color: var(--marfil-ink) !important;
+}
+
+@media (max-width: 640px) {
+  .marfil-staff h1 { font-size: clamp(2rem, 9vw, 3rem) !important; }
+}

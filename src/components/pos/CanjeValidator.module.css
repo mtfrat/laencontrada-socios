@@ -1,0 +1,84 @@
+.validator {
+  display: grid;
+  gap: 24px;
+  padding: clamp(22px, 3.5vw, 34px);
+  border: 1px solid #d7c9bb;
+  border-radius: 9px;
+  background: #fffaf3;
+  color: #352b2b;
+}
+
+.header { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 22px; border-bottom: 1px solid #e4d8c9; }
+.headerIcon { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 6px; background: #e9dfd1; color: #54262d; }
+.eyebrow, .methodEyebrow { color: #795c55; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.eyebrow { margin: 1px 0 5px; }
+.title { color: #352b2b; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 29px; line-height: 1.1; }
+.subtitle { margin-top: 6px; color: #6f5e54; font-size: 13px; line-height: 1.45; }
+
+.methods { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(270px, .8fr); gap: 16px; }
+.codePanel, .cameraPanel { display: flex; flex-direction: column; min-width: 0; padding: 25px; border: 1px solid #ddcfc1; border-radius: 7px; }
+.codePanel { background: #f8f1e8; }
+.cameraPanel { background: #fffaf3; }
+.codePanel h3, .cameraPanel h3 { margin-top: 10px; color: #3b2e2d; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 27px; font-weight: 600; line-height: 1.1; }
+.codePanel label { margin-top: 24px; margin-bottom: 8px; color: #54453f; font-size: 12px; font-weight: 700; }
+.inputWrap { position: relative; }
+.codeInput { width: 100%; min-height: 55px; padding: 12px 48px 12px 15px; border: 1px solid #b9a99c; border-radius: 5px; background: #fffaf3; color: #352b2b; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 18px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; outline: none; }
+.codeInput::placeholder { color: #9c8779; font-weight: 500; }
+.codeInput:focus { border-color: #54262d !important; box-shadow: 0 0 0 3px #54262d18; }
+.clearButton { position: absolute; top: 50%; right: 5px; display: grid; place-items: center; width: 42px; height: 42px; transform: translateY(-50%); border: 0; border-radius: 4px; background: transparent; color: #725f55; }
+.clearButton:hover { background: #f0e6d9; color: #54262d; }
+.help { margin-top: 9px; color: #75645a; font-size: 11px; line-height: 1.45; }
+
+.primaryButton, .secondaryButton { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; padding: 11px 17px; border: 1px solid; border-radius: 5px; font-size: 12px; font-weight: 700; line-height: 1.2; transition: background-color .15s ease, border-color .15s ease; }
+.primaryButton { margin-top: 27px; border-color: #54262d; background: #54262d; color: #fffaf3; }
+.primaryButton:hover:not(:disabled) { background: #713843; }
+.primaryButton:disabled { border-color: #c7b8ad; background: #d4c7bd; color: #776b64; cursor: not-allowed; }
+.secondaryButton { border-color: #c7b7a9; background: #e9dfd1; color: #54262d; }
+.secondaryButton:hover:not(:disabled) { background: #dfcebd; }
+.secondaryButton:disabled { opacity: .6; cursor: wait; }
+.primaryButton:focus-visible, .secondaryButton:focus-visible, .clearButton:focus-visible { outline: 2px solid #54262d; outline-offset: 2px; }
+.codePanel .primaryButton { width: 100%; margin-top: auto; }
+
+.cameraIcon { display: grid; place-items: center; width: 58px; height: 58px; margin-top: 30px; border: 1px solid #d7c9bb; border-radius: 8px; background: #f2e8dc; color: #54262d; }
+.cameraPanel p:not(.methodEyebrow) { max-width: 260px; margin-top: 9px; color: #6f5e54; font-size: 12px; line-height: 1.5; }
+.cameraPanel .secondaryButton { width: fit-content; margin-top: auto; }
+
+.error { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border: 1px solid #dfbbb3; border-radius: 6px; background: #fae9e4; color: #863c3a; font-size: 13px; line-height: 1.45; }
+.error svg { flex: none; }
+.error p { flex: 1; }
+.error button { display: grid; place-items: center; width: 30px; height: 30px; min-height: 30px; margin: -7px -8px -7px 0; border: 0; background: transparent; color: #863c3a; }
+
+.success { display: grid; justify-items: start; gap: 13px; padding: 25px; border: 1px solid #b6d8c1; border-radius: 7px; background: #eff7ef; color: #275b41; }
+.successIcon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #d7ebdd; }
+.successEyebrow { font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.success h3 { margin-top: 5px; color: #234c39; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 31px; font-weight: 600; line-height: 1.15; }
+.success p:not(.successEyebrow) { margin-top: 6px; font-size: 13px; line-height: 1.45; }
+.details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; width: 100%; overflow: hidden; border: 1px solid #bfd9c7; border-radius: 6px; background: #bfd9c7; }
+.details div { padding: 14px 16px; background: #fffaf3; }
+.details dt { color: #6f5e54; font-size: 11px; }
+.details dd { margin-top: 5px; color: #352b2b; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.success .primaryButton { min-width: 220px; margin-top: 5px; }
+
+.cameraView { display: grid; gap: 16px; }
+.readerFrame { position: relative; overflow: hidden; padding: 8px; border: 1px solid #d7c9bb; border-radius: 7px; background: #171313; }
+.readerTarget { min-height: 300px; overflow: hidden; border-radius: 4px; }
+.readerOverlay { position: absolute; inset: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: #171313e8; color: #fffaf3; font-size: 13px; font-weight: 700; }
+.cameraFooter { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cameraFooter p { color: #6f5e54; font-size: 12px; }
+
+@media (max-width: 700px) {
+  .validator { gap: 17px; }
+  .header { gap: 12px; padding-bottom: 17px; }
+  .headerIcon { width: 40px; height: 40px; }
+  .title { font-size: 25px; }
+  .methods { grid-template-columns: 1fr; gap: 12px; }
+  .codePanel, .cameraPanel { padding: 20px; }
+  .codePanel label { margin-top: 18px; }
+  .codePanel .primaryButton { margin-top: 22px; }
+  .cameraIcon { display: none; }
+  .cameraPanel h3 { margin-top: 8px; font-size: 23px; }
+  .cameraPanel .secondaryButton { width: 100%; margin-top: 17px; }
+  .cameraFooter { align-items: stretch; flex-direction: column; }
+  .details { grid-template-columns: 1fr; }
+  .success .primaryButton { width: 100%; }
+}
