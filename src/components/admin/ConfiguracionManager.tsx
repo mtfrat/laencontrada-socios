@@ -153,7 +153,7 @@ export default function ConfiguracionManager() {
               <input
                 type="number"
                 required
-                min={1}
+                min={50}
                 step={50}
                 value={pesosPorPunto}
                 onChange={(e) => setPesosPorPunto(Math.max(1, parseFloat(e.target.value) || 1))}

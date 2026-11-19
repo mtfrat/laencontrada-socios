@@ -122,7 +122,7 @@ export default function PremiosManager() {
           descripcion: descripcion.trim(),
           puntosRequeridos,
           stock,
-          imagenUrl: imagenUrl.trim() || null,
+          imagenUrl: imagenUrl.trim() || undefined,
           activo,
         }),
       });

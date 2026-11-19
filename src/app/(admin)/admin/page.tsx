@@ -32,10 +32,9 @@ export default async function AdminDashboardPage() {
     totalPremios,
     configPuntos,
     totalStaff,
-    financialsAgg,
+    visitasFinancierasRaw,
     pointsAgg,
     canjesAgg,
-    shiftsAgg,
     topPremiosRaw,
     topSociosRaw,
     recentVisitasRaw,
@@ -45,19 +44,37 @@ export default async function AdminDashboardPage() {
     prisma.premio.count({ where: { activo: true } }),
     prisma.configuracionPuntos.findFirst(),
     prisma.usuario.count({ where: { activo: true } }),
-    prisma.visitaConsumo.aggregate({
-      _sum: {
-        montoTotalTicket: true,
-        cantidadComensales: true,
-      },
-      _avg: {
-        montoTotalTicket: true,
-        gastoPromedioPorPersona: true,
-      },
-      _count: {
-        id: true,
-      },
-    }),
+    prisma.$queryRaw<
+      Array<{
+        franjaHoraria: string;
+        totalVisitas: number;
+        totalFacturado: number;
+        totalComensales: number;
+      }>
+    >`
+      WITH visitas_unicas AS (
+        SELECT DISTINCT ON (
+          COALESCE(NULLIF(BTRIM(ticket."numeroTicketFiscal"), ''), visita."id")
+        )
+          visita."franjaHoraria"::text AS "franjaHoraria",
+          visita."montoTotalTicket" AS "montoTotalTicket",
+          visita."cantidadComensales" AS "cantidadComensales"
+        FROM public."VisitaConsumo" AS visita
+        LEFT JOIN public."TicketAdjunto" AS ticket
+          ON ticket."visitaConsumoId" = visita."id"
+        ORDER BY
+          COALESCE(NULLIF(BTRIM(ticket."numeroTicketFiscal"), ''), visita."id"),
+          visita."fechaVisita" ASC,
+          visita."id" ASC
+      )
+      SELECT
+        "franjaHoraria",
+        COUNT(*)::int AS "totalVisitas",
+        SUM("montoTotalTicket")::float8 AS "totalFacturado",
+        SUM("cantidadComensales")::int AS "totalComensales"
+      FROM visitas_unicas
+      GROUP BY "franjaHoraria"
+    `,
     prisma.socio.aggregate({
       _sum: {
         puntosActuales: true,
@@ -69,12 +86,6 @@ export default async function AdminDashboardPage() {
       _sum: {
         puntosGastados: true,
       },
-      _count: {
-        id: true,
-      },
-    }),
-    prisma.visitaConsumo.groupBy({
-      by: ["franjaHoraria"],
       _count: {
         id: true,
       },
@@ -143,13 +154,17 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  // Procesamiento de Indicadores Financieros
-  const totalFacturado = Number(financialsAgg._sum.montoTotalTicket || 0);
-  const totalVisitas = financialsAgg._count.id || 0;
-  const totalComensales = financialsAgg._sum.cantidadComensales || 0;
-  const ticketPromedio = totalVisitas > 0 ? Math.round(Number(financialsAgg._avg.montoTotalTicket || 0)) : 0;
-  const gastoPromedioComensal =
-    totalVisitas > 0 ? Math.round(Number(financialsAgg._avg.gastoPromedioPorPersona || 0)) : 0;
+  // Una mesa puede generar una visita por socio. La consulta agrupa por factura
+  // en la base para que ticket y comensales cuenten una sola vez sin cargar todo
+  // el historial de visitas en memoria.
+  const totalFacturado = visitasFinancierasRaw.reduce(
+    (total, grupo) => total + Number(grupo.totalFacturado),
+    0,
+  );
+  const totalVisitas = visitasFinancierasRaw.reduce((total, grupo) => total + grupo.totalVisitas, 0);
+  const totalComensales = visitasFinancierasRaw.reduce((total, grupo) => total + grupo.totalComensales, 0);
+  const ticketPromedio = totalVisitas > 0 ? Math.round(totalFacturado / totalVisitas) : 0;
+  const gastoPromedioComensal = totalComensales > 0 ? Math.round(totalFacturado / totalComensales) : 0;
 
   // Procesamiento de Balance de Puntos
   const puntosCirculacion = pointsAgg._sum.puntosActuales || 0;
@@ -167,9 +182,9 @@ export default async function AdminDashboardPage() {
     OTRO: { label: "Otros Horarios", count: 0 },
   };
 
-  shiftsAgg.forEach((s) => {
-    if (shiftsMap[s.franjaHoraria]) {
-      shiftsMap[s.franjaHoraria].count = s._count.id;
+  visitasFinancierasRaw.forEach((grupo) => {
+    if (shiftsMap[grupo.franjaHoraria]) {
+      shiftsMap[grupo.franjaHoraria].count = grupo.totalVisitas;
     }
   });
 
